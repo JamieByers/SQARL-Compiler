@@ -13,7 +13,9 @@ from lexer import Tokeniser
 
 
 lex = Tokeniser("""
-                DECLARE list INITIALLY [1,2,3]
+                    DECLARE amount INITIALLY 3
+                    IF amount <= 4 DO
+
                 """)
 lex.tokenise()
 

@@ -3,8 +3,10 @@ from lexer2 import Tokeniser
 class Parser:
     def __init__(self, string):
         self.lexer = Tokeniser()
-        self.string = string
         self.pos = 0
+        self.current_token = self.lexer.tokens[self.pos] if self.lexer.tokens else None
+
+
 
     def advance(self):
         self.pos += 1
@@ -13,5 +15,10 @@ class Parser:
         else:
             self.current_char = self.string[self.pos]
 
+    def parse(self):
+        statements = []
+        while self.current_token:
+            statements.append(self.statement)
+        return statements
 
 

@@ -3,29 +3,36 @@ class Tokeniser:
         self.pos = 0
         self.string = string.strip()
         self.current_char = self.string[self.pos] if self.string else None
-        self.next_char = self.string[self.pos+1]
         self.tokens = []
 
-    def advance(self):
-        self.pos += 1
+    def advance(self, amount=1):
+        self.pos += amount
         if self.pos < len(self.string):
             self.current_char = self.string[self.pos]
         else:
             self.current_char = None
 
+    def  next_char(self):
+        return self.string[self.pos+1]
+
     def tokenise_normal(self):
         s = ""
         while self.current_char is not None and not self.current_char.isspace():
-            if self.current_char in [",", "[", "]", "{", "}", "(", ")"]:
-                self.match_token(self.current_char)
-                self.advance()
-            else:
-                s += self.current_char
-                self.advance()
+            s += self.current_char
+            self.advance()
 
         s = s.strip()
-        self.match_token(s)
+        self.check_token(s)
         return s
+
+    def tokenise_number(self):
+        n = ""
+        while self.current_char is not None and self.current_char.isdigit() and not self.current_char.isspace():
+           n += self.current_char
+           self.advance()
+
+        self.tokens.append({"type": "NUMBER", "value": n})
+        return n
 
     def tokenise_quote(self):
         qs = ""
@@ -70,38 +77,48 @@ class Tokeniser:
             self.advance()
 
         print(self.current_char)
-        if (self.current_char.isalpha() or self.current_char.isdigit()) and not self.current_char.isspace() and self.current_char is not None:
+
+        if self.current_char.isalpha() and not self.current_char.isspace() and self.current_char is not None:
             self.tokenise_normal()
+        if self.current_char is not None and self.current_char.isdigit() and not self.current_char.isspace():
+            self.tokenise_number()
         elif self.current_char == '"':
             self.tokenise_quote()
-        elif self.current_char == "[":
-            # self.tokenise_array()
-            self.match_token("[")
-        elif self.current_char == "]":
-            self.match_token("]")
-        elif self.current_char == "(":
-            # self.tokenise_paren()
-            self.match_token("(")
-        elif self.current_char == ")":
-            self.match_token(")")
-        elif self.current_char == ",":
-            self.match_token(",")
+        elif self.current_char in ["[", "]", "(", ")", "{", "}", ",", "+", "-", "*", "/", "<", ">"]:
+            self.match_token(self.current_char)
 
         else:
             self.advance()
 
-    def match_token(self, token):
-        print("TOKEN", token)
+    def check_token(self, token):
+        if token == "<"  and self.next_char() == "=":
+            self.tokens.append({"type": "LESS_THAN_OR_EQUAL", "value": token+"="})
+            self.advance(2)
+            return {"type": "LESS_THAN_OR_EQUAL", "value": token+"="}
+        elif token == ">" and self.next_char() == "=":
+            self.tokens.append({"type": "MORE_THAN_OR_EQUAL", "value": token+"="})
+            self.advance(2)
+            return {"type": "MORE_THAN_OR_EQUAL", "value": token+"="}
+
         token_types_matched = {
-            "DECLARE": "KEYWORD",
+            "DECLARE": "VARIABLE_DECLARATION",
+            "SET": "VARIABLE_ASSIGNMENT",
             "AS": "KEYWORD",
             "INTEGER": "TYPE",
             "REAL": "TYPE",
             "BOOLEAN": "TYPE",
             "CHARACTER": "TYPE",
-            "INITIALLY": "KEYWORD",
+            "ARRAY": "TYPE",
+            "OF": "TYPE_CONNECTOR",
+            "INITIALLY": "VARIABLE_DECLARATION",
+            "SEND": "KEYWORD",
+            "TO": "ASSIGNMENT",
+            "DISPLAY": "KEYWORD",
             "true": "BOOLEAN",
             "false": "BOOLEAN",
+            ">": "GREATER_THAN",
+            "<": "LESS_THAN",
+            "=": "EQUAL_TO",
             "[": "LSQPAREN",
             "]": "RSQPAREN",
             "{": "LCPAREN",
@@ -109,22 +126,34 @@ class Tokeniser:
             "(": "LPAREN",
             ")": "RPAREN",
             ",": "COMMA",
-        }
+            "+": "MATH_EXPR",
+            "-": "MATH_EXPR",
+            "*": "MATH_TERM",
+            "/": "MATH_TERM",
+            "WHILE": "KEYWORD",
+            "DO": "KEYWORD",
+            "END": "KEYWORD",
+            "IF": "KEYWORD",
+            "FOR": "KEYWORD",
+            "EACH": "KEYWORD",
 
-        self.advance()
+
+        }
 
         if token in token_types_matched.keys():
             t = {"type": token_types_matched[token], "value": token}
             self.tokens.append(t)
             return t
 
-        if token.isdigit():
-            t = {"type": "NUMBER", "value": token}
-            self.tokens.append(t)
-            return t
-
+        self.tokens.append({"type": "IDENTIFIER", "value": token})
         return {"type": "IDENTIFIER", "value": token}
 
+    def match_token(self, token):
+        if not token:
+            token = self.current_char
+
+        self.check_token(token)
+        self.advance()
 
     def tokenise(self):
         while self.current_char is not None:
