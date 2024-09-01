@@ -76,8 +76,6 @@ class Tokeniser:
         while self.current_char is not None and self.current_char.isspace() and self.current_char != "":
             self.advance()
 
-        print(self.current_char)
-
         if self.current_char.isalpha() and not self.current_char.isspace() and self.current_char is not None:
             self.tokenise_normal()
         if self.current_char is not None and self.current_char.isdigit() and not self.current_char.isspace():

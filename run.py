@@ -2,21 +2,12 @@ import json
 from parser import Parser
 from lexer import Tokeniser
 
+p = Parser("""
+                DECLARE variable INITIALLY "hello"
+                DECLARE hello INITIALLY "world"
+                DECLARE number INITIALLY 2
+           """)
 
-# parser = Parser("42")
+print("TOKENS: ", p.lexer.tokens)
 
-# ast = parser.parse()
-
-# print(json.dumps(ast))
-
-#sample - DECLARE var = "hello":
-
-
-lex = Tokeniser("""
-                    DECLARE amount INITIALLY 3
-                    IF amount <= 4 DO
-
-                """)
-lex.tokenise()
-
-print(lex.tokens)
+p.parse()
