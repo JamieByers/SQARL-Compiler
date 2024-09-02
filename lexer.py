@@ -15,6 +15,14 @@ class Tokeniser:
     def  next_char(self):
         return self.string[self.pos+1]
 
+    def tokenise_key(self):
+        k = ""
+        while self.current_char is not None and not self.current_char.isspace():
+            k += self.current_char
+            self.advance()
+
+        return k
+
     def tokenise_normal(self):
         s = ""
         while self.current_char is not None and not self.current_char.isspace():
@@ -32,7 +40,7 @@ class Tokeniser:
            self.advance()
 
         self.tokens.append({"type": "NUMBER", "value": n})
-        return n
+        return {"type": "NUMBER", "value": n}
 
     def tokenise_quote(self):
         qs = ""
@@ -43,7 +51,8 @@ class Tokeniser:
 
         self.advance()
         qs.strip()
-        self.tokens.append({"type": "string", "value": qs})
+        self.tokens.append({"type": "STRING", "value": qs})
+        return {"type": "STRING", "value": qs}
 
     def tokenise_array(self):
         arr = ""
@@ -57,6 +66,7 @@ class Tokeniser:
 
         self.advance()
         self.tokens.append({"type": "ARRAY", "value": arr})
+        return {"type": "ARRAY", "value": arr}
 
     def tokenise_paren(self):
         paren = ""
@@ -70,6 +80,7 @@ class Tokeniser:
 
         self.advance()
         self.tokens.append({"type": "PAREN", "value": paren})
+        return {"type": "PAREN", "value": paren}
 
 
     def next_token(self):
@@ -77,13 +88,13 @@ class Tokeniser:
             self.advance()
 
         if self.current_char.isalpha() and not self.current_char.isspace() and self.current_char is not None:
-            self.tokenise_normal()
+            return self.tokenise_normal()
         if self.current_char is not None and self.current_char.isdigit() and not self.current_char.isspace():
-            self.tokenise_number()
+            return self.tokenise_number()
         elif self.current_char == '"':
-            self.tokenise_quote()
-        elif self.current_char in ["[", "]", "(", ")", "{", "}", ",", "+", "-", "*", "/", "<", ">"]:
-            self.match_token(self.current_char)
+            return self.tokenise_quote()
+        elif self.current_char in ["[", "]", "(", ")", "{", "}", ",", "+", "-", "*", "/", "<", ">", "="]:
+            return self.match_token(self.current_char)
 
         else:
             self.advance()
@@ -107,6 +118,7 @@ class Tokeniser:
             "BOOLEAN": "TYPE",
             "CHARACTER": "TYPE",
             "ARRAY": "TYPE",
+            "STRING": "TYPE",
             "OF": "TYPE_CONNECTOR",
             "INITIALLY": "VARIABLE_DECLARATION",
             "SEND": "KEYWORD",
@@ -134,11 +146,23 @@ class Tokeniser:
             "IF": "KEYWORD",
             "FOR": "KEYWORD",
             "EACH": "KEYWORD",
+            "THEN": "KEYWORD",
 
 
         }
 
         if token in token_types_matched.keys():
+            if token == "END":
+                self.advance()
+                next = self.tokenise_key()
+                if next == "IF":
+                    t = {"type": "END", "value": "END IF"}
+                elif next == "WHILE":
+                    t = {"type": "END", "value": "END WHILE"}
+
+                self.tokens.append(t)
+                return t
+
             t = {"type": token_types_matched[token], "value": token}
             self.tokens.append(t)
             return t

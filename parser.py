@@ -7,6 +7,7 @@ class Parser:
         self.pos = 0
         self.current_token = self.lexer.tokens[self.pos] if self.lexer.tokens else None
         self.statements = []
+        self.variables = {}
 
     def advance(self, amount=1):
         self.pos += amount
@@ -14,6 +15,14 @@ class Parser:
             self.current_token = None
         else:
             self.current_token = self.lexer.tokens[self.pos]
+
+
+    def expect(self, expected):
+        if expected == self.lexer.tokens[self.pos+1]["type"]:
+            self.advance()
+        else:
+            print("ERROR UNEXPECTED TOKEN: ", self.lexer.tokens[self.pos+1], "EXPECTED ", expected)
+            return
 
     def parse(self):
         while self.pos <= len(self.lexer.tokens) and self.current_token is not None:
@@ -24,13 +33,23 @@ class Parser:
 
     def statement(self):
         if self.current_token["type"] == "VARIABLE_DECLARATION":
-            self.variable_declaration()
+            return self.variable_declaration()
         elif self.current_token["type"] == "VARIABLE_ASSIGNMENT":
             self.variable_assignment()
 
     def variable_declaration(self):
-        var = {}
-        var_type = ""
+        def type_expectation(self, expect):
+            if expect == "STRING" and self.lexer.tokens[self.pos+1]["type"] == "PAREN":
+                return True
+            if expect == "INTEGER" and self.lexer.tokens[self.pos+1].isdigit():
+                return True
+            if expect == "REAl" and self.lexer.tokens[self.pos+1].isdigit():
+                return True
+            if expect == "BOOLEAN" and self.lexer.tokens[self.pos+1]['value'] in ['TRUE', 'FALSE']:
+                return True
+
+            return False
+
         var_types = [
             "INTEGER",
             "CHARARACTER",
@@ -38,24 +57,43 @@ class Parser:
             "BOOLEAN",
             "ARRAY",
         ]
-        self.advance()
-        if self.current_token["value"]:
-            var["identifier"] = self.current_token["value"]
-            self.advance(2)
-            if self.current_token["value"] == "AS":
-                self.advance()
-                if self.current_token["value"] in var_types:
-                    var_type = self.current_token["value"]
-                    self.advance()
-                    var["value"] = self.current_token["value"]
-                else:
-                    print("ERROR: EXPECTED TYPE")
-            else:
-                var["value"] = self.current_token["value"]
-                self.advance()
+        var = ""
+        identifier = ""
+        value = ""
 
-        print("VARIABLE: ", var)
+        self.expect("IDENTIFIER")
+        if self.current_token['type'] == 'IDENTIFIER':
+            var += self.current_token['value']
+            self.variables[self.current_token['value']] = None
+            identifier = self.current_token['value']
+
+            self.expect('VARIABLE_DECLARATION')
+            self.advance()
+            if self.current_token['value'] != "AS":
+                if self.current_token['type'] == "STRING":
+                    var += (" = " + '"' + self.current_token['value'] + '"')
+                    value = self.current_token['value']
+                    self.advance()
+                else:
+                    var += (" = " + self.current_token['value'])
+                    value = self.current_token['value']
+                    self.advance()
+                    return var
+
+            else:
+                self.expect("TYPE")
+                if self.current_token['value'] in var_types and type_expectation(self.current_token['value']):
+                    self.expect("IDENTIFIER")
+                    var += self.current_token['value']
+                    value = self.current_token['value']
+        else:
+            print("EXPECTED IDENTIFIER")
+            return False
+
+        self.variables[identifier] = value
         return var
+
+
 
     def variable_assignment(self):
         self.advance()
