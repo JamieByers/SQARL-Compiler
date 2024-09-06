@@ -12,7 +12,7 @@ class Tokeniser:
         else:
             self.current_char = None
 
-    def  next_char(self):
+    def next_char(self):
         return self.string[self.pos+1]
 
     def tokenise_key(self):
@@ -48,6 +48,8 @@ class Tokeniser:
         while self.current_char != '"' and self.current_char is not None:
             qs += self.current_char
             self.advance()
+
+        qs = '"' + qs + '"'
 
         self.advance()
         qs.strip()

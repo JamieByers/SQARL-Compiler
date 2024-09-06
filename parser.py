@@ -8,6 +8,7 @@ class Parser:
         self.current_token = self.lexer.tokens[self.pos] if self.lexer.tokens else None
         self.statements = []
         self.variables = {}
+        self.indent_level = 0
 
     def advance(self, amount=1):
         self.pos += amount
@@ -22,11 +23,14 @@ class Parser:
             self.advance()
         else:
             print("ERROR UNEXPECTED TOKEN: ", self.lexer.tokens[self.pos+1], "EXPECTED ", expected)
-            return
+            raise f"Expected: {expected}"
 
     def parse(self):
         while self.pos <= len(self.lexer.tokens) and self.current_token is not None:
-            self.statements.append(self.statement())
+            statement = self.statement()
+            self.statements.append(statement)
+
+            print("STATEMENT: ", statement)
 
         return self.statements
 
@@ -39,9 +43,35 @@ class Parser:
         elif self.current_token["type"] == "KEYWORD":
             if self.current_token["value"] == "IF":
                 return self.if_statement()
-
+            elif self.current_token["value"] == "WHILE":
+                return self.while_statement()
+            elif self.current_token["value"] == "SEND":
+                return self.send_to_display_statement()
         else:
             return 
+
+    def simple_statement(self):
+        statement = ""
+        while self.current_token is not None and self.current_token["type"] != "KEYWORD":
+            statement += self.current_token["value"]
+            self.advance()
+
+        return statement
+
+    def send_to_display_statement(self):
+        self.advance()  # skip SEND
+        to_print = ""
+        while self.current_token["value"] != "TO":
+            to_print += self.current_token["value"]
+            self.advance()
+
+        self.advance() # skip past DISPLAY
+
+        code = f"print({to_print})"
+        
+        self.advance()
+        return code
+
 
     def variable_declaration(self):
         def type_expectation(self, expect):
@@ -77,12 +107,12 @@ class Parser:
             self.advance()
             if self.current_token['value'] != "AS":
                 if self.current_token['type'] == "STRING":
-                    var += (" = " + '"' + self.current_token['value'] + '"')
+                    var += (" = " + self.current_token['value'])
                     value = self.current_token['value']
                     self.advance()
                 else:
-                    var += (" = " + self.current_token['value'])
-                    value = self.current_token['value']
+                    var += (" = " + self.simple_statement())
+                    value =self.simple_statement()
                     self.advance()
                     return var
 
@@ -97,7 +127,8 @@ class Parser:
             return False
 
         self.variables[identifier] = value
-        return var
+        code = f"{identifier} = {value}"
+        return code
 
 
 
@@ -129,10 +160,48 @@ class Parser:
         self.advance() # move past if towards conidition
         condition = self.condition()
 
-        self.expect("")
+        self.indent_level += 1
+        code_block = self.parse_block()
+        self.indent_level -= 1
+
+
+        code = f"if {condition}:\n"
+        code += code_block
+
+        print(code)
+
+        self.advance() # end if statement
+        return code
 
     def while_statement(self):
-        pass
+        self.advance() # skip past while
+        condition = self.condition()
+
+        self.indent_level += 1
+        code_block = self.parse_block()
+        self.indent_level -= 1
+
+        code = f"while {condition}:\n"
+        code += code_block
+
+        print(code)
+
+        self.advance() # end if statement
+        return code
+
 
     def parse_block(self):
-        pass
+        self.advance() # skip THEN
+        block_statements = []
+        while self.current_token["type"] != "END":
+            block_statements.append(self.statement())
+        
+        code = ""
+        for statement in block_statements:
+            code_line = self.get_indent_level() + statement + "\n"
+            code += code_line
+
+        return code
+    
+    def get_indent_level(self):
+        return "    "*self.indent_level
