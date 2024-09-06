@@ -141,12 +141,12 @@ class Tokeniser:
             "*": "MATH_TERM",
             "/": "MATH_TERM",
             "WHILE": "KEYWORD",
-            "DO": "KEYWORD",
+            "DO": "BLOCK_START",
             "END": "KEYWORD",
             "IF": "KEYWORD",
             "FOR": "KEYWORD",
             "EACH": "KEYWORD",
-            "THEN": "KEYWORD",
+            "THEN": "BLOCK_START",
 
 
         }

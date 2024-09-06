@@ -10,4 +10,5 @@ p = Parser("""
 
 p.parse()
 
+print(p.lexer.tokens)
 print(p.statements)

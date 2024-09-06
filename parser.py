@@ -36,6 +36,9 @@ class Parser:
             return self.variable_declaration()
         elif self.current_token["type"] == "VARIABLE_ASSIGNMENT":
             return self.variable_assignment()
+        elif self.current_token["type"] == "KEYWORD":
+            if self.current_token["value"] == "IF":
+                return self.if_statement()
 
         else:
             return 
@@ -114,5 +117,22 @@ class Parser:
             self.advance()
         return statement
     
+    def condition(self):
+        condition = ""
+        while self.current_token["value"] not in ["DO", "THEN"]:
+            condition += self.current_token["value"]
+            self.advance()
+        
+        return condition
 
+    def if_statement(self):
+        self.advance() # move past if towards conidition
+        condition = self.condition()
 
+        self.expect("")
+
+    def while_statement(self):
+        pass
+
+    def parse_block(self):
+        pass
