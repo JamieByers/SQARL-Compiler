@@ -35,7 +35,10 @@ class Parser:
         if self.current_token["type"] == "VARIABLE_DECLARATION":
             return self.variable_declaration()
         elif self.current_token["type"] == "VARIABLE_ASSIGNMENT":
-            self.variable_assignment()
+            return self.variable_assignment()
+
+        else:
+            return 
 
     def variable_declaration(self):
         def type_expectation(self, expect):
@@ -96,5 +99,20 @@ class Parser:
 
 
     def variable_assignment(self):
-        self.advance()
+        self.expect("IDENTIFIER")
+        if self.current_token["value"] in self.variables.keys():
+            variable_identifier = self.current_token["value"]
+
+            self.expect("ASSIGNMENT")
+            self.advance()
+
+            variable_value = self.current_token["value"]
+
+            self.variables[variable_identifier] =  variable_value
+            statement = variable_identifier + " = " + '"' + variable_value + '"'
+
+            self.advance()
+        return statement
+    
+
 
