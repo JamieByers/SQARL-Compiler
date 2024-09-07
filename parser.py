@@ -27,11 +27,11 @@ class Parser:
 
     def parse(self):
         while self.pos <= len(self.lexer.tokens) and self.current_token is not None:
+
             statement = self.statement()
             self.statements.append(statement)
 
-            print("STATEMENT: ", statement)
-
+        print(self.statements)
         return self.statements
 
 
@@ -48,7 +48,7 @@ class Parser:
             elif self.current_token["value"] == "SEND":
                 return self.send_to_display_statement()
         else:
-            return 
+            return
 
     def simple_statement(self):
         statement = ""
@@ -56,6 +56,7 @@ class Parser:
             statement += self.current_token["value"]
             self.advance()
 
+        print(statement)
         return statement
 
     def send_to_display_statement(self):
@@ -68,7 +69,7 @@ class Parser:
         self.advance() # skip past DISPLAY
 
         code = f"print({to_print})"
-        
+
         self.advance()
         return code
 
@@ -104,7 +105,7 @@ class Parser:
             identifier = self.current_token['value']
 
             self.expect('VARIABLE_DECLARATION')
-            self.advance()
+            self.advance() # move up to var value
             if self.current_token['value'] != "AS":
                 if self.current_token['type'] == "STRING":
                     var += (" = " + self.current_token['value'])
@@ -113,7 +114,6 @@ class Parser:
                 else:
                     var += (" = " + self.simple_statement())
                     value =self.simple_statement()
-                    self.advance()
                     return var
 
             else:
@@ -147,13 +147,14 @@ class Parser:
 
             self.advance()
         return statement
-    
+
     def condition(self):
         condition = ""
         while self.current_token["value"] not in ["DO", "THEN"]:
             condition += self.current_token["value"]
             self.advance()
-        
+
+
         return condition
 
     def if_statement(self):
@@ -184,9 +185,10 @@ class Parser:
         code = f"while {condition}:\n"
         code += code_block
 
+        print("code- ")
         print(code)
 
-        self.advance() # end if statement
+        self.advance() # end while statement
         return code
 
 
@@ -195,13 +197,15 @@ class Parser:
         block_statements = []
         while self.current_token["type"] != "END":
             block_statements.append(self.statement())
-        
+
         code = ""
         for statement in block_statements:
             code_line = self.get_indent_level() + statement + "\n"
             code += code_line
 
+
         return code
-    
+
     def get_indent_level(self):
         return "    "*self.indent_level
+
