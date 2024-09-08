@@ -149,7 +149,8 @@ class Tokeniser:
             "FOR": "KEYWORD",
             "EACH": "KEYWORD",
             "THEN": "BLOCK_START",
-
+            "PROCEDURE": "SUBPROGRAM",
+            "FUNCTION": "SUBPROGRAM",
 
         }
 
@@ -161,6 +162,10 @@ class Tokeniser:
                     t = {"type": "END", "value": "END IF"}
                 elif next == "WHILE":
                     t = {"type": "END", "value": "END WHILE"}
+                elif next == "PROCEDURE":
+                    t = {"type": "END", "value": "END PROCEDURE"}
+                elif next == "FUNCTION":
+                    t = {"type": "END", "value": "END FUNCTION"}
 
                 self.tokens.append(t)
                 return t
