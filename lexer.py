@@ -151,6 +151,7 @@ class Tokeniser:
             "THEN": "BLOCK_START",
             "PROCEDURE": "SUBPROGRAM",
             "FUNCTION": "SUBPROGRAM",
+            "RETURN": "KEYWORD",
 
         }
 

@@ -18,11 +18,12 @@ class Test:
                         print(t.tokens)
 
                     self.passed = True
-            elif self.type == "parser":
+            elif self.test_type == "parser":
                     p = Parser(self.string)
-                    p.parse()
                     if self.print_tokens:
                         print(p.lexer.tokens)
+
+                    p.parse()
 
                     self.passed = True
 

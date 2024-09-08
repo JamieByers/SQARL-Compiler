@@ -40,6 +40,8 @@ class Parser:
             return self.variable_declaration()
         elif self.current_token["type"] == "VARIABLE_ASSIGNMENT":
             return self.variable_assignment()
+        elif self.current_token["type"] == "SUBPROGRAM":
+            return self.function_statement()
         elif self.current_token["type"] == "KEYWORD":
             if self.current_token["value"] == "IF":
                 return self.if_statement()
@@ -47,12 +49,14 @@ class Parser:
                 return self.while_statement()
             elif self.current_token["value"] == "SEND":
                 return self.send_to_display_statement()
+            elif self.current_token["value"] == "RETURN":
+                return self.return_statement()
         else:
             return
 
     def simple_statement(self):
         statement = ""
-        while self.current_token is not None and self.current_token["type"] != "KEYWORD":
+        while self.current_token is not None and self.current_token["type"] not in [ "KEYWORD", "END"]:
             statement += self.current_token["value"]
             self.advance()
 
@@ -171,7 +175,6 @@ class Parser:
 
         print(code)
 
-        self.advance() # end if statement
         return code
 
     def while_statement(self):
@@ -188,7 +191,6 @@ class Parser:
         print("code- ")
         print(code)
 
-        self.advance() # end while statement
         return code
 
 
@@ -203,9 +205,47 @@ class Parser:
             code_line = self.get_indent_level() + statement + "\n"
             code += code_line
 
-
+        self.advance() # end block
         return code
 
     def get_indent_level(self):
         return "    "*self.indent_level
+
+    def get_params(self):
+        self.expect("LPAREN")
+        params = []
+        while self.current_token["type"] != "RPAREN":
+            if self.current_token["type"] == "IDENTIFIER":
+                params.append(self.current_token["value"])
+            self.advance()
+
+        return params
+
+    def return_statement(self):
+        returning = self.simple_statement()
+
+        code = f"RETURN {returning}"
+
+        return code
+
+    def function_statement(self):
+        print("first token into func ", self.current_token)
+        self.expect("IDENTIFIER")
+        function_identifier = self.current_token["value"]
+        print(function_identifier)
+        params =  self.get_params()
+        print(params)
+        code_block = self.parse_block()
+        print(code_block)
+
+        code = f"def {function_statement}({params}):"
+        code += code_block
+
+        print("function code: ", code)
+
+        return code
+
+
+
+
 
