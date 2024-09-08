@@ -25,7 +25,7 @@ class Tokeniser:
 
     def tokenise_normal(self):
         s = ""
-        while self.current_char is not None and not self.current_char.isspace():
+        while self.current_char is not None and not self.current_char.isspace() and self.current_char not in ["(", ")", "[", "]", "{", "}"]:
             s += self.current_char
             self.advance()
 
