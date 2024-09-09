@@ -111,6 +111,11 @@ class Tokeniser:
             self.advance(2)
             return {"type": "MORE_THAN_OR_EQUAL", "value": token+"="}
 
+        if token == "=":
+            self.tokens.append({"type": "COMPARITOR", "value": "=="})
+            self.advance()
+            return {"type": "COMPARITOR", "value": "=="}
+
         token_types_matched = {
             "DECLARE": "VARIABLE_DECLARATION",
             "SET": "VARIABLE_ASSIGNMENT",
@@ -156,7 +161,13 @@ class Tokeniser:
         }
 
         if token in token_types_matched.keys():
-            if token == "END":
+            if token in ["true", "false"]:
+                t = {"type": "BOOLEAN", "value": token.capitalize()}
+
+                self.tokens.append(t)
+                return t
+
+            elif token == "END":
                 self.advance()
                 next = self.tokenise_key()
                 if next == "IF":

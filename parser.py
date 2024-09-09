@@ -34,6 +34,11 @@ class Parser:
         print(self.statements)
         return self.statements
 
+    def write(self):
+        with open("output_file.py", "w+") as file:
+            for statement in self.statements:
+                file.write(statement)
+
 
     def statement(self):
         if self.current_token["type"] == "VARIABLE_DECLARATION":
@@ -56,11 +61,10 @@ class Parser:
 
     def simple_statement(self):
         statement = ""
-        while self.current_token is not None and self.current_token["type"] not in [ "KEYWORD", "END"]:
+        while self.current_token is not None and self.current_token["type"] not in [ "KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION"]:
             statement += self.current_token["value"]
             self.advance()
 
-        print(statement)
         return statement
 
     def send_to_display_statement(self):
@@ -104,7 +108,6 @@ class Parser:
 
         self.expect("IDENTIFIER")
         if self.current_token['type'] == 'IDENTIFIER':
-            var += self.current_token['value']
             self.variables[self.current_token['value']] = None
             identifier = self.current_token['value']
 
@@ -112,26 +115,21 @@ class Parser:
             self.advance() # move up to var value
             if self.current_token['value'] != "AS":
                 if self.current_token['type'] == "STRING":
-                    var += (" = " + self.current_token['value'])
                     value = self.current_token['value']
                     self.advance()
                 else:
-                    var += (" = " + self.simple_statement())
                     value =self.simple_statement()
-                    return var
-
             else:
                 self.expect("TYPE")
                 if self.current_token['value'] in var_types and type_expectation(self.current_token['value']):
                     self.expect("IDENTIFIER")
-                    var += self.current_token['value']
                     value = self.current_token['value']
         else:
             print("EXPECTED IDENTIFIER")
             return False
 
         self.variables[identifier] = value
-        code = f"{identifier} = {value}"
+        code = f"{identifier} = {value} \n"
         return code
 
 
@@ -147,7 +145,7 @@ class Parser:
             variable_value = self.current_token["value"]
 
             self.variables[variable_identifier] =  variable_value
-            statement = variable_identifier + " = " + '"' + variable_value + '"'
+            statement = f"{variable_identifier} = {variable_value}\n"
 
             self.advance()
         return statement
@@ -202,7 +200,11 @@ class Parser:
 
         code = ""
         for statement in block_statements:
-            code_line = self.get_indent_level() + statement + "\n"
+            if "\n" not in statement:
+                code_line = self.get_indent_level() + statement + "\n"
+            else:
+                code_line = self.get_indent_level() + statement
+
             code += code_line
 
         self.advance() # end block
@@ -222,6 +224,7 @@ class Parser:
         return params
 
     def return_statement(self):
+        self.advance() # skip RETURN
         returning = self.simple_statement()
 
         code = f"RETURN {returning}"
@@ -229,16 +232,21 @@ class Parser:
         return code
 
     def function_statement(self):
-        print("first token into func ", self.current_token)
         self.expect("IDENTIFIER")
         function_identifier = self.current_token["value"]
-        print(function_identifier)
         params =  self.get_params()
-        print(params)
-        code_block = self.parse_block()
-        print(code_block)
 
-        code = f"def {function_statement}({params}):"
+        self.indent_level += 1
+        code_block = self.parse_block()
+        self.indent_level -= 1
+
+        if len(params) > 0:
+            code = f"def {function_identifier}():\n"
+        elif len(params) == 1:
+            code = f"def {function_identifier}({params}):\n"
+        else:
+            code = f"def {function_identifier}({', '.join(params)}):\n"
+
         code += code_block
 
         print("function code: ", code)

@@ -1,21 +1,19 @@
-from lexer import Tokeniser
+from tests.general_test import Test
 
-t = Tokeniser("""
+t = Test(
 
-        PROCEDURE func(param)
-            DECLARE hello INITIALLY "hello"
-        END PROCEDURE
-
-        FUNCTION func(param)
-            DECLARE example INITIALLY "test"
-            RETURN example
+    """
+        FUNCTION func(param1, param2)
+            RETURN 0
         END FUNCTION
+    """,
 
-              """)
+    test_type = "tokeniser",
+    test_name = "function lexing",
+    print_tokens = True
 
+)
 
-t.tokenise()
-
-print(t.tokens)
+t.run(True)
 
 
