@@ -136,18 +136,18 @@ class Parser:
 
     def variable_assignment(self):
         self.expect("IDENTIFIER")
-        if self.current_token["value"] in self.variables.keys():
-            variable_identifier = self.current_token["value"]
+        variable_identifier = self.current_token["value"]
 
-            self.expect("ASSIGNMENT")
-            self.advance()
+        self.expect("ASSIGNMENT")
+        self.advance()
 
-            variable_value = self.current_token["value"]
+        variable_value = self.current_token["value"]
 
-            self.variables[variable_identifier] =  variable_value
-            statement = f"{variable_identifier} = {variable_value}\n"
+        self.variables[variable_identifier] =  variable_value
+        statement = f"{variable_identifier} = {variable_value}\n"
 
-            self.advance()
+        self.advance()
+
         return statement
 
     def condition(self):

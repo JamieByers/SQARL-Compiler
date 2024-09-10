@@ -6,7 +6,7 @@ class Test:
         self.print_tokens = print_tokens
         self.test_name = test_name
 
-    def run(self, show_error_message=False):
+    def run(self, write=False, show_error_message=False):
         from lexer import Tokeniser
         from parser import Parser
 
@@ -24,6 +24,8 @@ class Test:
                         print(p.lexer.tokens)
 
                     p.parse()
+                    if write == True:
+                        p.write()
 
                     self.passed = True
 
