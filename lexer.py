@@ -157,7 +157,10 @@ class Tokeniser:
             "PROCEDURE": "SUBPROGRAM",
             "FUNCTION": "SUBPROGRAM",
             "RETURN": "KEYWORD",
-
+            "CLASS": "OBJECT",
+            "CONSTRUCTOR": "CONSTRUCTOR",
+            "THIS": "THIS",
+            "OVERRIDE": "SUBPROGRAM",
         }
 
         if token in token_types_matched.keys():
