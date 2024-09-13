@@ -25,8 +25,10 @@ class Parser:
             self.advance()
         else:
             print("ERROR UNEXPECTED TOKEN: ", self.lexer.tokens[self.pos+1], "EXPECTED ", expected)
-            raise f"Expected: {expected}"
-        
+
+
+
+
 
     def parse(self):
         while self.pos <= len(self.lexer.tokens) and self.current_token is not None:
@@ -146,7 +148,7 @@ class Parser:
         self.expect("ASSIGNMENT")
         self.advance()
 
-        variable_value = self.current_token["value"]
+        variable_value = self.simple_statement()
 
         self.variables[variable_identifier] =  variable_value
         statement = f"{variable_identifier} = {variable_value}\n"
@@ -168,9 +170,9 @@ class Parser:
         self.advance() # move past if towards conidition
         condition = self.condition()
 
-        self.indent_level += 1
+
         code_block = self.parse_block()
-        self.indent_level -= 1
+
 
 
         code = f"if {condition}:\n"
@@ -181,15 +183,64 @@ class Parser:
         return code
 
     def for_statement(self):
-        pass
+        self.advance()
+        if self.current_token["type"] == "IDENTIFIER":
+            for_loop_identifier = self.current_token["value"]
+            self.expect("KEYWORD") # move to FROM
+            self.advance() # move to starting index
+            starting_index = self.current_token["value"]
+
+            self.expect("ASSIGNMENT") # move to TO
+            self.advance() # move to loop length
+            loop_length = self.current_token["value"]
+
+            self.advance()
+            if self.current_token["value"] == "STEP":
+                self.advance()
+                step_count = self.current_token["value"]
+                self.expect("BLOCK_START")
+
+
+            for_block = self.parse_block()
+
+
+
+            code = f"for {for_loop_identifier} in range({starting_index}, {loop_length}): \n"
+            code += for_block
+
+            print("for loop code: ")
+            print(code)
+
+            return code
+
+        elif self.current_token["type"] == "KEYWORD":
+            self.expect("IDENTIFIER")
+            for_loop_identifier = self.current_token["value"]
+            self.expect("KEYWORD")
+            self.expect("IDENTIFIER")
+            looping_from = self.current_token["value"]
+            self.expect("BLOCK_START")
+
+
+            for_code = self.parse_block()
+
+
+            code = f"for {for_loop_identifier} in {looping_from}: \n"
+            code += for_code
+
+            return code
+
+        else:
+            print("Error with for loop")
+
 
     def while_statement(self):
         self.advance() # skip past while
         condition = self.condition()
 
-        self.indent_level += 1
+
         code_block = self.parse_block()
-        self.indent_level -= 1
+
 
         code = f"while {condition}:\n"
         code += code_block
@@ -201,8 +252,10 @@ class Parser:
 
 
     def parse_block(self):
+        self.indent_level += 1
         self.advance() # skip THEN
         block_statements = []
+        print(self.current_token)
         while self.current_token["type"] != "END":
             block_statements.append(self.statement())
 
@@ -216,6 +269,7 @@ class Parser:
             code += code_line
 
         self.advance() # end block
+        self.indent_level -= 1
         return code
 
     def get_indent_level(self):
@@ -249,8 +303,8 @@ class Parser:
             "CHARACTER": "string",
             "INTEGER": "int",
             "REAL": "float",
-            "LIST": "list",
             "BOOLEAN": "bool",
+            "ARRAY": "LIST",
 
         }
 
@@ -264,9 +318,8 @@ class Parser:
             type_expected = self.current_token["value"]
 
 
-        self.indent_level += 1
+
         code_block = self.parse_block()
-        self.indent_level -= 1
 
         if len(params) > 0:
             code = f"def {function_identifier}({' '.join(params)})"

@@ -7,7 +7,7 @@ class Test:
         self.print_tokens = print_tokens
         self.test_name = test_name
 
-    def run(self, write=False, show_error_message=False, long_error_message=False):
+    def run(self, write=False, show_error_message=False,):
         from lexer import Tokeniser
         from parser import Parser
 
@@ -35,10 +35,9 @@ class Test:
 
             self.passed = False
             print(self.test_name, "failed")
+            print("Failed test with error: ", e)
             if show_error_message:
-                print("Failed test with error: ", e)
-                if long_error_message == True:
-                    print(traceback.format_exc())
+                print(traceback.format_exc())
 
 
         return self.passed

@@ -46,7 +46,7 @@ class Tokeniser:
     def tokenise_quote(self):
         qs = ""
         self.advance()
-        while self.current_char != '"' and self.current_char is not None:
+        while self.current_char != '"' and self.current_char != "'" and self.current_char is not None:
             qs += self.current_char
             self.advance()
 
@@ -94,7 +94,7 @@ class Tokeniser:
             return self.tokenise_normal()
         if self.current_char is not None and self.current_char.isdigit() and not self.current_char.isspace():
             return self.tokenise_number()
-        elif self.current_char == '"':
+        elif self.current_char == '"' or self.current_char == "'":
             return self.tokenise_quote()
         elif self.current_char in ["[", "]", "(", ")", "{", "}", ",", "+", "-", "*", "/", "<", ">", "="]:
             return self.match_token(self.current_char)

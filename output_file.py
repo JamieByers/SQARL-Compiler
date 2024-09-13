@@ -1,4 +1,3 @@
-def func(param1, param2) -> int: 
-    return 0
-def proc(p1, p2) -> int: 
-    return 1
+words = [1,2,3] 
+for word in words: 
+    print(word)
