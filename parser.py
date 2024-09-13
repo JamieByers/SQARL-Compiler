@@ -36,7 +36,6 @@ class Parser:
             statement = self.statement()
             self.statements.append(statement)
 
-        print(self.statements)
         return self.statements
 
     def write(self):
@@ -68,9 +67,10 @@ class Parser:
 
     def simple_statement(self):
         statement = ""
-        while self.current_token is not None and self.current_token["type"] not in [ "KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION"]:
+        while self.current_token is not None and self.current_token["type"] not in [ "KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT"]:
             statement += self.current_token["value"]
             self.advance()
+
 
         return statement
 
@@ -143,24 +143,25 @@ class Parser:
 
     def variable_assignment(self):
         self.expect("IDENTIFIER")
-        variable_identifier = self.current_token["value"]
 
-        self.expect("ASSIGNMENT")
-        self.advance()
+        variable_identifier = self.simple_statement()
+
+        self.advance() # skip past TO
 
         variable_value = self.simple_statement()
 
-        self.variables[variable_identifier] =  variable_value
         statement = f"{variable_identifier} = {variable_value}\n"
 
-        self.advance()
-
+        print("leaving varass with" ,self.current_token)
         return statement
 
     def condition(self):
         condition = ""
         while self.current_token["value"] not in ["DO", "THEN"]:
-            condition += self.current_token["value"]
+            c = self.current_token["value"]
+            if c in ["AND", "OR"]:
+                c = f" {c.lower()} "
+            condition += c
             self.advance()
 
 
@@ -172,8 +173,6 @@ class Parser:
 
 
         code_block = self.parse_block()
-
-
 
         code = f"if {condition}:\n"
         code += code_block
@@ -255,7 +254,6 @@ class Parser:
         self.indent_level += 1
         self.advance() # skip THEN
         block_statements = []
-        print(self.current_token)
         while self.current_token["type"] != "END":
             block_statements.append(self.statement())
 

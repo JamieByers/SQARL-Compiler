@@ -1,3 +1,4 @@
-words = [1,2,3] 
-for word in words: 
-    print(word)
+condition = True 
+if condition==True:
+    condition = False
+    print("Hello World!")
