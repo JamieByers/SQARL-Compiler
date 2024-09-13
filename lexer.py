@@ -23,6 +23,7 @@ class Tokeniser:
 
         return k
 
+
     def tokenise_normal(self):
         s = ""
         while self.current_char is not None and not self.current_char.isspace() and self.current_char not in ["(", ")", "[", "]", "{", "}"]:
@@ -153,10 +154,12 @@ class Tokeniser:
             "IF": "KEYWORD",
             "FOR": "KEYWORD",
             "EACH": "KEYWORD",
+            "FROM": "KEYWORD",
             "THEN": "BLOCK_START",
             "PROCEDURE": "SUBPROGRAM",
             "FUNCTION": "SUBPROGRAM",
             "RETURN": "KEYWORD",
+            "RETURNS": "KEYWORD",
             "CLASS": "OBJECT",
             "CONSTRUCTOR": "CONSTRUCTOR",
             "THIS": "THIS",
@@ -181,6 +184,12 @@ class Tokeniser:
                     t = {"type": "END", "value": "END PROCEDURE"}
                 elif next == "FUNCTION":
                     t = {"type": "END", "value": "END FUNCTION"}
+                elif next == "FOR":
+                    t = {"type": "END", "value": "END FOR"}
+                    self.advance()
+                    next = self.tokenise_key()
+                    if next == "EACH":
+                        t = {"type": "END", "value": "END FOR EACH"}
 
                 self.tokens.append(t)
                 return t

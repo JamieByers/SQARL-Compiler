@@ -17,6 +17,8 @@ class Parser:
         else:
             self.current_token = self.lexer.tokens[self.pos]
 
+    def next_token(self):
+        return self.lexer.tokens[self.pos+1]
 
     def expect(self, expected):
         if expected == self.lexer.tokens[self.pos+1]["type"]:
@@ -24,6 +26,7 @@ class Parser:
         else:
             print("ERROR UNEXPECTED TOKEN: ", self.lexer.tokens[self.pos+1], "EXPECTED ", expected)
             raise f"Expected: {expected}"
+        
 
     def parse(self):
         while self.pos <= len(self.lexer.tokens) and self.current_token is not None:
@@ -50,6 +53,8 @@ class Parser:
         elif self.current_token["type"] == "KEYWORD":
             if self.current_token["value"] == "IF":
                 return self.if_statement()
+            if self.current_token["value"] == "FOR":
+                return self.for_statement()
             elif self.current_token["value"] == "WHILE":
                 return self.while_statement()
             elif self.current_token["value"] == "SEND":
@@ -175,6 +180,9 @@ class Parser:
 
         return code
 
+    def for_statement(self):
+        pass
+
     def while_statement(self):
         self.advance() # skip past while
         condition = self.condition()
@@ -227,7 +235,7 @@ class Parser:
         self.advance() # skip RETURN
         returning = self.simple_statement()
 
-        code = f"RETURN {returning}"
+        code = f"return {returning}"
 
         return code
 
@@ -236,20 +244,47 @@ class Parser:
         function_identifier = self.current_token["value"]
         params =  self.get_params()
 
+        type_translation = {
+            "STRING": "string",
+            "CHARACTER": "string",
+            "INTEGER": "int",
+            "REAL": "float",
+            "LIST": "list",
+            "BOOLEAN": "bool",
+
+        }
+
+        expecting_type = False
+        type_expected = None
+        next_token = self.next_token()
+        if next_token["value"] == "RETURNS":
+            self.advance() # move past RETURNS
+            expecting_type = True
+            self.expect("TYPE")
+            type_expected = self.current_token["value"]
+
+
         self.indent_level += 1
         code_block = self.parse_block()
         self.indent_level -= 1
 
         if len(params) > 0:
-            code = f"def {function_identifier}():\n"
+            code = f"def {function_identifier}({' '.join(params)})"
         elif len(params) == 1:
-            code = f"def {function_identifier}({params}):\n"
+            code = f"def {function_identifier}({params[0]})"
         else:
-            code = f"def {function_identifier}({', '.join(params)}):\n"
+            code = f"def {function_identifier}()"
+
+        if expecting_type:
+            code += f" -> {type_translation[type_expected]}: \n"
+        else:
+            code += ":\n"
+
 
         code += code_block
 
-        print("function code: ", code)
+        print("function code: ")
+        print(code)
 
         return code
 

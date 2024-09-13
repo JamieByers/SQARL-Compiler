@@ -1,4 +1,4 @@
-condition = True 
-if condition==True:
-    condition = False
-    print("Hello World!")
+def func(param1, param2) -> int: 
+    return 0
+def proc(p1, p2) -> int: 
+    return 1

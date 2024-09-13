@@ -3,7 +3,7 @@ from tests.general_test import Test
 t = Test(
 
     """
-        FUNCTION func(param1, param2)
+        FUNCTION func(param1, param2) RETURNS INTEGER
             RETURN 0
         END FUNCTION
     """,

@@ -1,4 +1,5 @@
 class Test:
+
     def __init__(self, string, test_type, test_name, print_tokens=False):
         self.string = string
         self.test_type = test_type
@@ -6,16 +7,16 @@ class Test:
         self.print_tokens = print_tokens
         self.test_name = test_name
 
-    def run(self, write=False, show_error_message=False):
+    def run(self, write=False, show_error_message=False, long_error_message=False):
         from lexer import Tokeniser
         from parser import Parser
 
         try:
             if self.test_type == "tokeniser":
-                    t = Tokeniser(self.string)
-                    t.tokenise()
+                    tokeniser = Tokeniser(self.string)
+                    tokeniser.tokenise()
                     if self.print_tokens:
-                        print(t.tokens)
+                        print("TOKENS: ", tokeniser.tokens)
 
                     self.passed = True
             elif self.test_type == "parser":
@@ -30,9 +31,14 @@ class Test:
                     self.passed = True
 
         except Exception as e:
+            import traceback
+
             self.passed = False
             print(self.test_name, "failed")
             if show_error_message:
                 print("Failed test with error: ", e)
+                if long_error_message == True:
+                    print(traceback.format_exc())
+
 
         return self.passed
