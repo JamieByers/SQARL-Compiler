@@ -23,6 +23,27 @@ class Tokeniser:
 
         return k
 
+    def tokenise_key_without_advance(self):
+        k = ""
+        pos  = self.pos + 1
+        curr_char = self.string[pos]
+        while curr_char is not None and not curr_char.isspace():
+            k += curr_char
+            pos += 1
+            curr_char = self.string[pos]
+
+        print("k", k)
+        return k
+
+    def skip_token(self):
+        skipping = ""
+        while self.current_char.isspace():
+            self.advance()
+        while self.current_char is not None and not self.current_char.isspace():
+            skipping += self.current_char
+            self.advance()
+
+        print("skipping", skipping)
 
     def tokenise_normal(self):
         s = ""
@@ -113,9 +134,18 @@ class Tokeniser:
             return {"type": "MORE_THAN_OR_EQUAL", "value": token+"="}
 
         if token == "=":
-            self.tokens.append({"type": "COMPARITOR", "value": "=="})
+            self.tokens.append({"type": "COMPARITOR", "value": " == "})
             self.advance()
-            return {"type": "COMPARITOR", "value": "=="}
+            return {"type": "COMPARITOR", "value": " == "}
+
+        if token == "ELSE":
+            print("running else check", "checking if", self.tokenise_key_without_advance())
+            if self.tokenise_key_without_advance() == "IF":
+                print("else check complete", self.tokenise_key_without_advance())
+                self.skip_token()
+                self.tokens.append({"type": "KEYWORD", "value": "ELSE IF"})
+                return {"type": "KEYWORD", "value": "ELSE IF"}
+
 
         token_types_matched = {
             "DECLARE": "VARIABLE_DECLARATION",
@@ -132,8 +162,8 @@ class Tokeniser:
             "SEND": "KEYWORD",
             "TO": "ASSIGNMENT",
             "DISPLAY": "KEYWORD",
-            "true": "BOOLEAN",
-            "false": "BOOLEAN",
+            "TRUE": "BOOLEAN",
+            "FALSE": "BOOLEAN",
             ">": "GREATER_THAN",
             "<": "LESS_THAN",
             "=": "EQUAL_TO",
@@ -152,6 +182,7 @@ class Tokeniser:
             "DO": "BLOCK_START",
             "END": "KEYWORD",
             "IF": "KEYWORD",
+            "ELSE": "KEYWORD",
             "FOR": "KEYWORD",
             "EACH": "KEYWORD",
             "FROM": "KEYWORD",
@@ -167,8 +198,8 @@ class Tokeniser:
         }
 
         if token in token_types_matched.keys():
-            if token in ["true", "false"]:
-                t = {"type": "BOOLEAN", "value": token.capitalize()}
+            if token in ["TRUE", "FALSE"]:
+                t = {"type": "BOOLEAN", "value": token.lower().capitalize()}
 
                 self.tokens.append(t)
                 return t
@@ -186,7 +217,7 @@ class Tokeniser:
                     t = {"type": "END", "value": "END FUNCTION"}
                 elif next == "FOR":
                     t = {"type": "END", "value": "END FOR"}
-                    self.advance()
+                    # self.advance()
                     next = self.tokenise_key()
                     if next == "EACH":
                         t = {"type": "END", "value": "END FOR EACH"}

@@ -28,7 +28,9 @@ class Parser:
             print("ERROR UNEXPECTED TOKEN: ", self.lexer.tokens[self.pos+1], "EXPECTED ", expected)
 
 
-
+    def display(self):
+        for statement in self.statements:
+            print(statement)
 
 
     def parse(self):
@@ -47,26 +49,27 @@ class Parser:
 
     def statement(self):
         if self.current_token["type"] == "VARIABLE_DECLARATION":
-            return self.variable_declaration()
+            statement =  self.variable_declaration()
         elif self.current_token["type"] == "VARIABLE_ASSIGNMENT":
-            return self.variable_assignment()
+            statement = self.variable_assignment()
         elif self.current_token["type"] == "SUBPROGRAM":
-            return self.function_statement()
+            statement =  self.function_statement()
         elif self.current_token["type"] == "KEYWORD":
             if self.current_token["value"] == "IF":
-                return self.if_statement()
+                statement =  self.if_statement()
             if self.current_token["value"] == "FOR":
-                return self.for_statement()
+                statement =  self.for_statement()
             elif self.current_token["value"] == "WHILE":
-                return self.while_statement()
+                statement =  self.while_statement()
             elif self.current_token["value"] == "SEND":
-                return self.send_to_display_statement()
+                statement =  self.send_to_display_statement()
             elif self.current_token["value"] == "RETURN":
-                return self.return_statement()
+                statement =  self.return_statement()
         elif self.current_token["type"] == "END":
             self.advance()
-        else:
-            return
+
+        print("statement", statement)
+        return statement
 
     def simple_statement(self):
         statement = ""
@@ -166,7 +169,7 @@ class Parser:
             condition += c
             self.advance()
 
-
+        print("condition", condition)
         return condition
 
     def if_statement(self):
@@ -179,7 +182,6 @@ class Parser:
         code = f"if {condition}:\n"
         code += code_block
 
-        print(code)
 
         return code
 
@@ -196,7 +198,6 @@ class Parser:
             loop_length = self.current_token["value"]
 
             self.advance()
-            print("advanced to", self.current_token)
             if self.current_token["value"] == "STEP":
                 self.advance()
                 step_count = self.current_token["value"]
@@ -210,8 +211,6 @@ class Parser:
             code = f"for {for_loop_identifier} in range({starting_index}, {loop_length}): \n"
             code += for_block
 
-            print("for loop code: ")
-            print(code)
 
             return code
 
@@ -247,8 +246,6 @@ class Parser:
         code = f"while {condition}:\n"
         code += code_block
 
-        print("code- ")
-        print(code)
 
         return code
 
@@ -338,8 +335,6 @@ class Parser:
 
         code += code_block
 
-        print("function code: ")
-        print(code)
 
         return code
 

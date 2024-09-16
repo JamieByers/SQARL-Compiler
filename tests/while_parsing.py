@@ -3,10 +3,10 @@ from parser import Parser
 p = Parser("""
 
                 DECLARE condition INITIALLY true
-                WHILE condition = true DO 
+                WHILE (condition = TRUE) AND (condition = TRUE) DO
                     SET condition TO false
-                END WHILE 
-           
+                END WHILE
+
            """)
 
 p.parse()

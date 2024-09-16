@@ -17,6 +17,9 @@ p = Parser("""
 
                     WHILE condition = false DO
                         SET condition TO true
+                        WHILE condition = true DO
+                            SET condition TO false
+                        END WHILE
                     END WHILE
 
 
