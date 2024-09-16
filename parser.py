@@ -1,4 +1,5 @@
 from lexer import Tokeniser
+import time
 
 class Parser:
     def __init__(self, string):
@@ -62,6 +63,8 @@ class Parser:
                 return self.send_to_display_statement()
             elif self.current_token["value"] == "RETURN":
                 return self.return_statement()
+        elif self.current_token["type"] == "END":
+            self.advance()
         else:
             return
 
@@ -152,7 +155,6 @@ class Parser:
 
         statement = f"{variable_identifier} = {variable_value}\n"
 
-        print("leaving varass with" ,self.current_token)
         return statement
 
     def condition(self):
@@ -194,6 +196,7 @@ class Parser:
             loop_length = self.current_token["value"]
 
             self.advance()
+            print("advanced to", self.current_token)
             if self.current_token["value"] == "STEP":
                 self.advance()
                 step_count = self.current_token["value"]
@@ -252,10 +255,11 @@ class Parser:
 
     def parse_block(self):
         self.indent_level += 1
-        self.advance() # skip THEN
+        self.advance() # skip past THEN
         block_statements = []
         while self.current_token["type"] != "END":
-            block_statements.append(self.statement())
+            statement = self.statement()
+            block_statements.append(statement)
 
         code = ""
         for statement in block_statements:

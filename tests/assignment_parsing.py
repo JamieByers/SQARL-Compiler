@@ -11,4 +11,4 @@ for test in tests:
 
     )
 
-    t.run(show_error_message=True)
+    t.ru(show_error_message=True)
