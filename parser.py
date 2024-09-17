@@ -65,8 +65,15 @@ class Parser:
                 statement =  self.send_to_display_statement()
             elif self.current_token["value"] == "RETURN":
                 statement =  self.return_statement()
+        elif self.current_token["type"] == "KEYWORD_CONTINUED":
+                if self.current_token["value"] == "ELSE IF":
+                    statement = self.else_if_statement()
+                elif self.current_token["value"] == "ELSE":
+                    statement = self.else_statement()
         elif self.current_token["type"] == "END":
             self.advance()
+        else:
+            print("statement failed", self.current_token)
 
         # print("statement", statement)
         return statement
@@ -184,6 +191,27 @@ class Parser:
 
         return code
 
+    def else_if_statement(self):
+        self.advance()
+        condition = self.condition()
+
+        code_block = self.parse_block()
+
+        code = f"elif {condition}:\n"
+        code += code_block
+
+        return code
+
+    def else_statement(self):
+        self.advance()
+
+        code_block = self.parse_block(skip_then=False)
+
+        code = "else: \n"
+        code += code_block
+
+        return code
+
     def for_statement(self):
         self.advance()
         if self.current_token["type"] == "IDENTIFIER":
@@ -249,9 +277,12 @@ class Parser:
         return code
 
 
-    def parse_block(self):
+    def parse_block(self, skip_then=True):
         self.indent_level += 1
-        self.advance() # skip past THEN
+        print("entering parse block", self.current_token)
+        if skip_then:
+            self.advance() # skip past THEN
+
         block_statements = []
         while self.current_token["type"] not in ["END", "KEYWORD_CONTINUED"]:
             statement = self.statement()
@@ -266,8 +297,11 @@ class Parser:
 
             code += code_line
 
-        self.advance() # end block
+        if self.current_token["type"] == "END":
+            self.advance() # end block
+
         self.indent_level -= 1
+        print("leaving parse block on" , self.current_token)
         return code
 
     def get_indent_level(self):
