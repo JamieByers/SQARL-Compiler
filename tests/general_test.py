@@ -24,6 +24,7 @@ class Test:
                         print(self.parser.lexer.tokens)
 
                     self.parser.parse()
+                    self.parser.display()
                     if write == True:
                         self.parser.write()
 

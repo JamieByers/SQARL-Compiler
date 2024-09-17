@@ -68,7 +68,7 @@ class Parser:
         elif self.current_token["type"] == "END":
             self.advance()
 
-        print("statement", statement)
+        # print("statement", statement)
         return statement
 
     def simple_statement(self):
@@ -169,7 +169,6 @@ class Parser:
             condition += c
             self.advance()
 
-        print("condition", condition)
         return condition
 
     def if_statement(self):
@@ -254,7 +253,7 @@ class Parser:
         self.indent_level += 1
         self.advance() # skip past THEN
         block_statements = []
-        while self.current_token["type"] != "END":
+        while self.current_token["type"] not in ["END", "KEYWORD_CONTINUED"]:
             statement = self.statement()
             block_statements.append(statement)
 

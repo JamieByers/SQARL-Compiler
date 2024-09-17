@@ -32,7 +32,6 @@ class Tokeniser:
             pos += 1
             curr_char = self.string[pos]
 
-        print("k", k)
         return k
 
     def skip_token(self):
@@ -43,7 +42,6 @@ class Tokeniser:
             skipping += self.current_char
             self.advance()
 
-        print("skipping", skipping)
 
     def tokenise_normal(self):
         s = ""
@@ -139,11 +137,9 @@ class Tokeniser:
             return {"type": "COMPARITOR", "value": " == "}
 
         if token == "ELSE":
-            print("running else check", "checking if", self.tokenise_key_without_advance())
             if self.tokenise_key_without_advance() == "IF":
-                print("else check complete", self.tokenise_key_without_advance())
                 self.skip_token()
-                self.tokens.append({"type": "KEYWORD", "value": "ELSE IF"})
+                self.tokens.append({"type": "KEYWORD_CONTINUED", "value": "ELSE IF"})
                 return {"type": "KEYWORD", "value": "ELSE IF"}
 
 
@@ -182,7 +178,7 @@ class Tokeniser:
             "DO": "BLOCK_START",
             "END": "KEYWORD",
             "IF": "KEYWORD",
-            "ELSE": "KEYWORD",
+            "ELSE": "KEYWORD_CONTINUED",
             "FOR": "KEYWORD",
             "EACH": "KEYWORD",
             "FROM": "KEYWORD",

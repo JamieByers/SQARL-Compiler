@@ -9,7 +9,7 @@ SET high TO length(array)-1
 SET found TO FALSE
 WHILE (found = FALSE) AND (low <= high) DO
 SET mid TO (low + high)/2
-IF target = array[mid]
+IF target = array[mid] THEN
 SEND target & “ found at position ” & mid TO DISPLAY
 SET found TO TRUE
 ELSE IF target > array[mid]
