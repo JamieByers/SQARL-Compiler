@@ -8,10 +8,9 @@ class Parser:
         self.pos = 0
         self.current_token = self.lexer.tokens[self.pos] if self.lexer.tokens else None
         self.statements = []
-        self.variables = {}
         self.indent_level = 0
 
-    def advance(self, amount=1):
+    def advance(self, amount=1) -> None:
         self.pos += amount
         if self.pos >= len(self.lexer.tokens):
             self.current_token = None
@@ -28,12 +27,12 @@ class Parser:
             print("ERROR UNEXPECTED TOKEN: ", self.lexer.tokens[self.pos+1], "EXPECTED ", expected)
 
 
-    def display(self):
+    def display(self) -> None:
         for statement in self.statements:
             print(statement)
 
 
-    def parse(self):
+    def parse(self) -> []:
         while self.pos <= len(self.lexer.tokens) and self.current_token is not None:
 
             statement = self.statement()
@@ -41,7 +40,7 @@ class Parser:
 
         return self.statements
 
-    def write(self):
+    def write(self) -> []:
         with open("output_file.py", "w+") as file:
             for statement in self.statements:
                 file.write(statement)

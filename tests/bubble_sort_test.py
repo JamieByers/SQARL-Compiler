@@ -22,7 +22,8 @@ END WHILE
 Test(
     test,
     test_name="bubble sort",
-    test_type="parser"
+    test_type="tokeniser",
+    print_tokens = True
 
 
 ).run(write=True)

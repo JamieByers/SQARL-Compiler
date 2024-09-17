@@ -1,21 +1,29 @@
+from dataclasses import dataclass
+from typing import List, Optional
+
+@dataclass
+class Token:
+    type: str
+    value: str
+
 class Tokeniser:
-    def __init__(self, string):
+    def __init__(self, string: str):
         self.pos = 0
         self.string = string.strip()
         self.current_char = self.string[self.pos] if self.string else None
         self.tokens = []
 
-    def advance(self, amount=1):
+    def advance(self, amount=1) -> None:
         self.pos += amount
         if self.pos < len(self.string):
             self.current_char = self.string[self.pos]
         else:
             self.current_char = None
 
-    def next_char(self):
+    def next_char(self) -> str:
         return self.string[self.pos+1]
 
-    def tokenise_key(self):
+    def tokenise_key(self) -> str:
         k = ""
         while self.current_char is not None and not self.current_char.isspace():
             k += self.current_char
@@ -23,7 +31,7 @@ class Tokeniser:
 
         return k
 
-    def tokenise_key_without_advance(self):
+    def tokenise_key_without_advance(self) -> str:
         k = ""
         pos  = self.pos + 1
         curr_char = self.string[pos]
@@ -34,7 +42,7 @@ class Tokeniser:
 
         return k
 
-    def skip_token(self):
+    def skip_token(self) -> str:
         skipping = ""
         while self.current_char.isspace():
             self.advance()
@@ -43,7 +51,7 @@ class Tokeniser:
             self.advance()
 
 
-    def tokenise_normal(self):
+    def tokenise_normal(self) -> str:
         s = ""
         while self.current_char is not None and not self.current_char.isspace() and self.current_char not in ["(", ")", "[", "]", "{", "}"]:
             s += self.current_char
@@ -53,16 +61,17 @@ class Tokeniser:
         self.check_token(s)
         return s
 
-    def tokenise_number(self):
+    def tokenise_number(self) -> Token:
         n = ""
         while self.current_char is not None and self.current_char.isdigit() and not self.current_char.isspace():
            n += self.current_char
            self.advance()
 
-        self.tokens.append({"type": "NUMBER", "value": n})
-        return {"type": "NUMBER", "value": n}
+        token = Token("NUMBER", n)
+        self.tokens.append(token)
+        return token
 
-    def tokenise_quote(self):
+    def tokenise_quote(self) -> Token:
         qs = ""
         self.advance()
         while self.current_char != '"' and self.current_char != "'" and self.current_char is not None:
@@ -73,39 +82,12 @@ class Tokeniser:
 
         self.advance()
         qs.strip()
-        self.tokens.append({"type": "STRING", "value": qs})
-        return {"type": "STRING", "value": qs}
-
-    def tokenise_array(self):
-        arr = ""
-        self.advance()
-        while self.current_char is not None and self.current_char != "]":
-            if self.current_char.isspace():
-                self.advance()
-            else:
-                arr += self.current_char
-                self.advance()
-
-        self.advance()
-        self.tokens.append({"type": "ARRAY", "value": arr})
-        return {"type": "ARRAY", "value": arr}
-
-    def tokenise_paren(self):
-        paren = ""
-        self.advance()
-        while self.current_char is not None and self.current_char != ")":
-            if self.current_char.isspace():
-                self.advance()
-            else:
-                paren += self.current_char
-                self.advance()
-
-        self.advance()
-        self.tokens.append({"type": "PAREN", "value": paren})
-        return {"type": "PAREN", "value": paren}
+        token = Token("STRING", qs)
+        self.tokens.append(token)
+        return token
 
 
-    def next_token(self):
+    def next_token(self) -> Token:
         while self.current_char is not None and self.current_char.isspace() and self.current_char != "":
             self.advance()
 
@@ -121,26 +103,31 @@ class Tokeniser:
         else:
             self.advance()
 
-    def check_token(self, token):
+    def check_token(self, token: str) -> Token:
         if token == "<"  and self.next_char() == "=":
-            self.tokens.append({"type": "LESS_THAN_OR_EQUAL", "value": token+"="})
+            token = Token("LESS_THAN_OR_EQUAL", token+"=")
+            token = self.tokens.append(token)
             self.advance(2)
-            return {"type": "LESS_THAN_OR_EQUAL", "value": token+"="}
+            return token
         elif token == ">" and self.next_char() == "=":
-            self.tokens.append({"type": "MORE_THAN_OR_EQUAL", "value": token+"="})
+            token = Token("MORE_THAN_OR_EQUAL", token+"=")
+            token = self.tokens.append(token)
             self.advance(2)
-            return {"type": "MORE_THAN_OR_EQUAL", "value": token+"="}
+            return token
 
         if token == "=":
-            self.tokens.append({"type": "COMPARITOR", "value": " == "})
+            token = Token("COMPARITOR", " == ")
+            token = self.tokens.append(token)
             self.advance()
-            return {"type": "COMPARITOR", "value": " == "}
+            return token
 
         if token == "ELSE":
             if self.tokenise_key_without_advance() == "IF":
                 self.skip_token()
-                self.tokens.append({"type": "KEYWORD_CONTINUED", "value": "ELSE IF"})
-                return {"type": "KEYWORD", "value": "ELSE IF"}
+
+                token = Token("KEYWORD_CONTINUED", "ELSE IF")
+                self.tokens.append(token)
+                return token
 
 
         token_types_matched = {
@@ -195,7 +182,7 @@ class Tokeniser:
 
         if token in token_types_matched.keys():
             if token in ["TRUE", "FALSE"]:
-                t = {"type": "BOOLEAN", "value": token.lower().capitalize()}
+                t = Token("BOOLEAN", token.lower().capitalize())
 
                 self.tokens.append(t)
                 return t
@@ -204,38 +191,39 @@ class Tokeniser:
                 self.advance()
                 next = self.tokenise_key()
                 if next == "IF":
-                    t = {"type": "END", "value": "END IF"}
+                    t = Token(type= "END", value= "END IF")
                 elif next == "WHILE":
-                    t = {"type": "END", "value": "END WHILE"}
+                    t = Token(type= "END", value= "END WHILE")
                 elif next == "PROCEDURE":
-                    t = {"type": "END", "value": "END PROCEDURE"}
+                    t = Token(type= "END", value= "END PROCEDURE")
                 elif next == "FUNCTION":
-                    t = {"type": "END", "value": "END FUNCTION"}
+                    t = Token(type= "END", value= "END FUNCTION")
                 elif next == "FOR":
-                    t = {"type": "END", "value": "END FOR"}
+                    t = Token(type= "END", value= "END FOR")
                     # self.advance()
                     next = self.tokenise_key()
                     if next == "EACH":
-                        t = {"type": "END", "value": "END FOR EACH"}
+                        t = Token(type= "END", value= "END FOR EACH")
 
                 self.tokens.append(t)
                 return t
 
-            t = {"type": token_types_matched[token], "value": token}
+            t = Token(type= token_types_matched[token], value= token)
             self.tokens.append(t)
             return t
 
-        self.tokens.append({"type": "IDENTIFIER", "value": token})
-        return {"type": "IDENTIFIER", "value": token}
+        token = Token("INDENTIFIER", token)
+        self.tokens.append(token)
+        return token
 
-    def match_token(self, token):
+    def match_token(self, token: str) -> None:
         if not token:
             token = self.current_char
 
         self.check_token(token)
         self.advance()
 
-    def tokenise(self):
+    def tokenise(self) -> List[Token]:
         while self.current_char is not None:
             self.next_token()
 
