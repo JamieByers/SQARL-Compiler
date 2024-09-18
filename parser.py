@@ -1,4 +1,5 @@
 from lexer import Tokeniser
+from classes import *
 import time
 
 class Parser:
@@ -8,6 +9,7 @@ class Parser:
         self.pos = 0
         self.current_token = self.lexer.tokens[self.pos] if self.lexer.tokens else None
         self.statements = []
+        self.AST_nodes = []
         self.indent_level = 0
 
     def advance(self, amount=1) -> None:
@@ -123,6 +125,7 @@ class Parser:
         var = ""
         identifier = ""
         value = ""
+        expected_type = None
 
         self.expect("IDENTIFIER")
         if self.current_token.type == 'IDENTIFIER':
@@ -139,14 +142,15 @@ class Parser:
             else:
                 self.expect("TYPE")
                 if self.current_token.value in var_types and type_expectation(self.current_token['value']):
+                    expected_type = self.current_token.value
                     self.expect("IDENTIFIER")
                     value = self.current_token.value
         else:
             print("EXPECTED IDENTIFIER")
             return False
 
-        self.variables[identifier] = value
         code = f"{identifier} = {value} \n"
+        self.AST_nodes.append(VariableDeclaration(type="VariableDeclaration", name=identifier, initial_value = value, var_type=expected_type ))
         return code
 
 
@@ -162,6 +166,7 @@ class Parser:
 
         statement = f"{variable_identifier} = {variable_value}\n"
 
+        self.AST_nodes.append(VariableAssignment(type="VariableAssignment", name=variable_identifier, value=variable_value))
         return statement
 
     def condition(self):
@@ -173,6 +178,7 @@ class Parser:
             condition += c
             self.advance()
 
+        self.AST_nodes(SimpleStatement(type="condition", value=condition))
         return condition
 
     def if_statement(self):
@@ -186,6 +192,7 @@ class Parser:
         code += code_block
 
 
+        self.AST_nodes.append(IfStatement(type="IfStatement", condition=condition, code_block=code_block ))
         return code
 
     def else_if_statement(self):

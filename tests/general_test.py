@@ -1,12 +1,13 @@
 class Test:
 
-    def __init__(self, string, test_type, test_name, print_tokens=False):
+    def __init__(self, string, test_type, test_name, print_tokens=False, print_ASTNodes=False):
         from lexer import Tokeniser
         from parser import Parser
         self.string = string
         self.test_type = test_type
         self.passed = False
         self.print_tokens = print_tokens
+        self.print_ASTNodes = print_ASTNodes
         self.test_name = test_name
         self.tokeniser = Tokeniser(self.string)
         self.parser = Parser(self.string)
@@ -22,6 +23,8 @@ class Test:
             elif self.test_type == "parser":
                     if self.print_tokens:
                         print(self.parser.lexer.tokens)
+                    if self.print_ASTNodes:
+                        print(self.parser.AST_nodes)
 
                     self.parser.parse()
                     self.parser.display()

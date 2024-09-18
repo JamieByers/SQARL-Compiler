@@ -6,7 +6,7 @@ class ASTNode:
     type: str
 
 @dataclass
-class Program:
+class Program(ASTNode):
     statements: List[ASTNode]
 
 
@@ -17,31 +17,31 @@ class VariableDeclaration(ASTNode):
     var_type: str
 
 @dataclass
-class VariableAssignment:
+class VariableAssignment(ASTNode):
     name: str
     value = Union[str, int ,float, bool]
 
 
 @dataclass
-class FunctionDeclaration:
+class FunctionDeclaration(ASTNode):
     name: str
     params : List[str]
     code_block: List[ASTNode]
     return_type: Optional[str]
 
 @dataclass
-class IfStatement:
+class IfStatement(ASTNode):
     condition: "Expression"
     code_block: List[ASTNode]
     else_block: Optional[List[ASTNode]]
 
 @dataclass
-class WhileStatement:
+class WhileStatement(ASTNode):
     condition: "Expression"
     code_block: List[ASTNode]
 
 @dataclass
-class ForStatement:
+class ForStatement(ASTNode):
     variable: str
     start: str
     end: str
@@ -49,7 +49,15 @@ class ForStatement:
     code_block: List[ASTNode]
 
 @dataclass
-class ReturnStatement:
+class ReturnStatement(ASTNode):
     value: Union[str, int, float, bool, "Expression"]
 
+@dataclass
+class Expression(ASTNode):
+    operator: str
+    left: Union[str, int, float, bool, 'Expression']
+    right: Optional[Union[str, int, float, bool, 'Expression']] = None
 
+@dataclass
+class SimpleStatement(ASTNode):
+    value:  Union[str, int, float, bool, 'Expression'] = None

@@ -9,7 +9,8 @@ t = Test(
 
     test_name = "declaration parsing",
     test_type = "parser",
-    print_tokens = False
+    print_tokens = False,
+    print_ASTNodes = True
 
 )
 
