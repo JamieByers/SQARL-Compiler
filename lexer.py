@@ -212,7 +212,7 @@ class Tokeniser:
             self.tokens.append(t)
             return t
 
-        token = Token("INDENTIFIER", token)
+        token = Token("IDENTIFIER", token)
         self.tokens.append(token)
         return token
 

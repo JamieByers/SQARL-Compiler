@@ -21,7 +21,7 @@ class Parser:
         return self.lexer.tokens[self.pos+1]
 
     def expect(self, expected):
-        if expected == self.lexer.tokens[self.pos+1]["type"]:
+        if expected == self.lexer.tokens[self.pos+1].type:
             self.advance()
         else:
             print("ERROR UNEXPECTED TOKEN: ", self.lexer.tokens[self.pos+1], "EXPECTED ", expected)
@@ -47,40 +47,39 @@ class Parser:
 
 
     def statement(self):
-        if self.current_token["type"] == "VARIABLE_DECLARATION":
+        if self.current_token.type == "VARIABLE_DECLARATION":
             statement =  self.variable_declaration()
-        elif self.current_token["type"] == "VARIABLE_ASSIGNMENT":
+        elif self.current_token.type == "VARIABLE_ASSIGNMENT":
             statement = self.variable_assignment()
-        elif self.current_token["type"] == "SUBPROGRAM":
+        elif self.current_token.type == "SUBPROGRAM":
             statement =  self.function_statement()
-        elif self.current_token["type"] == "KEYWORD":
-            if self.current_token["value"] == "IF":
+        elif self.current_token.type == "KEYWORD":
+            if self.current_token.value == "IF":
                 statement =  self.if_statement()
-            if self.current_token["value"] == "FOR":
+            if self.current_token.value == "FOR":
                 statement =  self.for_statement()
-            elif self.current_token["value"] == "WHILE":
+            elif self.current_token.value == "WHILE":
                 statement =  self.while_statement()
-            elif self.current_token["value"] == "SEND":
+            elif self.current_token.value == "SEND":
                 statement =  self.send_to_display_statement()
-            elif self.current_token["value"] == "RETURN":
+            elif self.current_token.value == "RETURN":
                 statement =  self.return_statement()
-        elif self.current_token["type"] == "KEYWORD_CONTINUED":
-                if self.current_token["value"] == "ELSE IF":
+        elif self.current_token.type == "KEYWORD_CONTINUED":
+                if self.current_token.value == "ELSE IF":
                     statement = self.else_if_statement()
-                elif self.current_token["value"] == "ELSE":
+                elif self.current_token.value == "ELSE":
                     statement = self.else_statement()
-        elif self.current_token["type"] == "END":
+        elif self.current_token.type == "END":
             self.advance()
         else:
-            print("statement failed", self.current_token)
+            print("statement failed", self.current_token, self.pos)
 
-        # print("statement", statement)
         return statement
 
     def simple_statement(self):
         statement = ""
-        while self.current_token is not None and self.current_token["type"] not in [ "KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT"]:
-            statement += self.current_token["value"]
+        while self.current_token is not None and self.current_token.type not in [ "KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT"]:
+            statement += self.current_token.value
             self.advance()
 
 
@@ -89,8 +88,8 @@ class Parser:
     def send_to_display_statement(self):
         self.advance()  # skip SEND
         to_print = ""
-        while self.current_token["value"] != "TO":
-            to_print += self.current_token["value"]
+        while self.current_token.value != "TO":
+            to_print += self.current_token.value
             self.advance()
 
         self.advance() # skip past DISPLAY
@@ -103,13 +102,13 @@ class Parser:
 
     def variable_declaration(self):
         def type_expectation(self, expect):
-            if expect == "STRING" and self.lexer.tokens[self.pos+1]["type"] == "PAREN":
+            if expect == "STRING" and self.lexer.tokens[self.pos+1].type == "PAREN":
                 return True
             if expect == "INTEGER" and self.lexer.tokens[self.pos+1].isdigit():
                 return True
             if expect == "REAl" and self.lexer.tokens[self.pos+1].isdigit():
                 return True
-            if expect == "BOOLEAN" and self.lexer.tokens[self.pos+1]['value'] in ['TRUE', 'FALSE']:
+            if expect == "BOOLEAN" and self.lexer.tokens[self.pos+1].value in ['TRUE', 'FALSE']:
                 return True
 
             return False
@@ -126,23 +125,22 @@ class Parser:
         value = ""
 
         self.expect("IDENTIFIER")
-        if self.current_token['type'] == 'IDENTIFIER':
-            self.variables[self.current_token['value']] = None
-            identifier = self.current_token['value']
+        if self.current_token.type == 'IDENTIFIER':
+            identifier = self.current_token.value
 
             self.expect('VARIABLE_DECLARATION')
             self.advance() # move up to var value
-            if self.current_token['value'] != "AS":
-                if self.current_token['type'] == "STRING":
-                    value = self.current_token['value']
+            if self.current_token.value != "AS":
+                if self.current_token.type == "STRING":
+                    value = self.current_token.value
                     self.advance()
                 else:
                     value =self.simple_statement()
             else:
                 self.expect("TYPE")
-                if self.current_token['value'] in var_types and type_expectation(self.current_token['value']):
+                if self.current_token.value in var_types and type_expectation(self.current_token['value']):
                     self.expect("IDENTIFIER")
-                    value = self.current_token['value']
+                    value = self.current_token.value
         else:
             print("EXPECTED IDENTIFIER")
             return False
@@ -168,8 +166,8 @@ class Parser:
 
     def condition(self):
         condition = ""
-        while self.current_token["value"] not in ["DO", "THEN"]:
-            c = self.current_token["value"]
+        while self.current_token.value not in ["DO", "THEN"]:
+            c = self.current_token.value
             if c in ["AND", "OR"]:
                 c = f" {c.lower()} "
             condition += c
@@ -213,20 +211,20 @@ class Parser:
 
     def for_statement(self):
         self.advance()
-        if self.current_token["type"] == "IDENTIFIER":
-            for_loop_identifier = self.current_token["value"]
+        if self.current_token.type == "IDENTIFIER":
+            for_loop_identifier = self.current_token.value
             self.expect("KEYWORD") # move to FROM
             self.advance() # move to starting index
-            starting_index = self.current_token["value"]
+            starting_index = self.current_token.value
 
             self.expect("ASSIGNMENT") # move to TO
             self.advance() # move to loop length
-            loop_length = self.current_token["value"]
+            loop_length = self.current_token.value
 
             self.advance()
-            if self.current_token["value"] == "STEP":
+            if self.current_token.value == "STEP":
                 self.advance()
-                step_count = self.current_token["value"]
+                step_count = self.current_token.value
                 self.expect("BLOCK_START")
 
 
@@ -240,12 +238,12 @@ class Parser:
 
             return code
 
-        elif self.current_token["type"] == "KEYWORD":
+        elif self.current_token.type == "KEYWORD":
             self.expect("IDENTIFIER")
-            for_loop_identifier = self.current_token["value"]
+            for_loop_identifier = self.current_token.value
             self.expect("KEYWORD")
             self.expect("IDENTIFIER")
-            looping_from = self.current_token["value"]
+            looping_from = self.current_token.value
             self.expect("BLOCK_START")
 
 
@@ -278,12 +276,11 @@ class Parser:
 
     def parse_block(self, skip_then=True):
         self.indent_level += 1
-        print("entering parse block", self.current_token)
         if skip_then:
             self.advance() # skip past THEN
 
         block_statements = []
-        while self.current_token["type"] not in ["END", "KEYWORD_CONTINUED"]:
+        while self.current_token.type not in ["END", "KEYWORD_CONTINUED"]:
             statement = self.statement()
             block_statements.append(statement)
 
@@ -296,11 +293,10 @@ class Parser:
 
             code += code_line
 
-        if self.current_token["type"] == "END":
+        if self.current_token.type == "END":
             self.advance() # end block
 
         self.indent_level -= 1
-        print("leaving parse block on" , self.current_token)
         return code
 
     def get_indent_level(self):
@@ -309,9 +305,9 @@ class Parser:
     def get_params(self):
         self.expect("LPAREN")
         params = []
-        while self.current_token["type"] != "RPAREN":
-            if self.current_token["type"] == "IDENTIFIER":
-                params.append(self.current_token["value"])
+        while self.current_token.type != "RPAREN":
+            if self.current_token.type == "IDENTIFIER":
+                params.append(self.current_token.value)
             self.advance()
 
         return params
@@ -326,7 +322,7 @@ class Parser:
 
     def function_statement(self):
         self.expect("IDENTIFIER")
-        function_identifier = self.current_token["value"]
+        function_identifier = self.current_token.value
         params =  self.get_params()
 
         type_translation = {
@@ -342,11 +338,11 @@ class Parser:
         expecting_type = False
         type_expected = None
         next_token = self.next_token()
-        if next_token["value"] == "RETURNS":
+        if next_token.value == "RETURNS":
             self.advance() # move past RETURNS
             expecting_type = True
             self.expect("TYPE")
-            type_expected = self.current_token["value"]
+            type_expected = self.current_token.value
 
 
 

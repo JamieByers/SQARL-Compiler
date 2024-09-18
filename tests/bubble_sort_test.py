@@ -22,7 +22,7 @@ END WHILE
 Test(
     test,
     test_name="bubble sort",
-    test_type="tokeniser",
+    test_type="parser",
     print_tokens = True
 
 
