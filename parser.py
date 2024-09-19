@@ -1,6 +1,6 @@
 from lexer import Tokeniser
 from classes import *
-import time
+from typing import List
 
 class Parser:
     def __init__(self, string):
@@ -11,6 +11,7 @@ class Parser:
         self.statements = []
         self.AST_nodes = []
         self.indent_level = 0
+
 
     def advance(self, amount=1) -> None:
         self.pos += amount
@@ -34,7 +35,8 @@ class Parser:
             print(statement)
 
 
-    def parse(self) -> []:
+
+    def parse(self) -> List:
         while self.pos <= len(self.lexer.tokens) and self.current_token is not None:
 
             statement = self.statement()
@@ -42,7 +44,7 @@ class Parser:
 
         return self.statements
 
-    def write(self) -> []:
+    def write(self) -> List:
         with open("output_file.py", "w+") as file:
             for statement in self.statements:
                 file.write(statement)
@@ -78,7 +80,7 @@ class Parser:
 
         return statement
 
-    def simple_statement(self):
+    def simple_statement(self) -> str:
         statement = ""
         while self.current_token is not None and self.current_token.type not in [ "KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT"]:
             statement += self.current_token.value
@@ -166,6 +168,7 @@ class Parser:
 
         statement = f"{variable_identifier} = {variable_value}\n"
 
+        variable_value = str(variable_value)
         self.AST_nodes.append(VariableAssignment(type="VariableAssignment", name=variable_identifier, value=variable_value))
         return statement
 
@@ -178,7 +181,7 @@ class Parser:
             condition += c
             self.advance()
 
-        self.AST_nodes(SimpleStatement(type="condition", value=condition))
+        self.AST_nodes.append(SimpleStatement(type="condition", value=condition))
         return condition
 
     def if_statement(self):
@@ -191,8 +194,16 @@ class Parser:
         code = f"if {condition}:\n"
         code += code_block
 
+        else_if_block = None
+        else_block = None
 
-        self.AST_nodes.append(IfStatement(type="IfStatement", condition=condition, code_block=code_block ))
+        if self.current_token.value == "ELSE IF":
+            else_if_block = self.else_if_statement()
+        if self.current_token.value == "ELSE":
+            else_block = self.else_statement()
+            
+
+        self.AST_nodes.append(IfStatement(type="IfStatement", condition=condition, code_block=code_block, else_block=else_block, else_if_block=else_if_block ))
         return code
 
     def else_if_statement(self):
@@ -229,6 +240,7 @@ class Parser:
             loop_length = self.current_token.value
 
             self.advance()
+            step_count = 1
             if self.current_token.value == "STEP":
                 self.advance()
                 step_count = self.current_token.value
@@ -242,7 +254,7 @@ class Parser:
             code = f"for {for_loop_identifier} in range({starting_index}, {loop_length}): \n"
             code += for_block
 
-
+            self.AST_nodes.append(ForStatement(type="ForStatement", variable=for_loop_identifier, start=starting_index, end=loop_length, step=step_count, code_block=for_block))
             return code
 
         elif self.current_token.type == "KEYWORD":
@@ -260,6 +272,7 @@ class Parser:
             code = f"for {for_loop_identifier} in {looping_from}: \n"
             code += for_code
 
+            self.AST_nodes.append(ForEachStatement(type="ForEachStatement", variable=for_loop_identifier, loop_from=looping_from, code_block=for_block))
             return code
 
         else:
@@ -270,14 +283,12 @@ class Parser:
         self.advance() # skip past while
         condition = self.condition()
 
-
         code_block = self.parse_block()
-
 
         code = f"while {condition}:\n"
         code += code_block
 
-
+        self.AST_nodes.append(WhileStatement(type="WhileStatement", condition=condition, code_block=code_block))
         return code
 
 
@@ -370,7 +381,7 @@ class Parser:
 
         code += code_block
 
-
+        self.AST_nodes.append(FunctionDeclaration(type="FunctionDeclaration", name=function_identifier, params=params, code_block=code_block, return_type=type_expected))
         return code
 
 

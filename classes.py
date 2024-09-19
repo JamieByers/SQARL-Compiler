@@ -14,31 +14,32 @@ class Program(ASTNode):
 class VariableDeclaration(ASTNode):
     name: str
     initial_value: Union[str, int, float, bool]
-    var_type: str
+    var_type: Optional[str]
 
 @dataclass
 class VariableAssignment(ASTNode):
     name: str
-    value = Union[str, int ,float, bool]
+    value: Union[str, int ,float, bool]
 
 
 @dataclass
 class FunctionDeclaration(ASTNode):
     name: str
     params : List[str]
-    code_block: List[ASTNode]
+    code_block: Union[List[ASTNode]]
     return_type: Optional[str]
 
 @dataclass
 class IfStatement(ASTNode):
     condition: "Expression"
-    code_block: List[ASTNode]
-    else_block: Optional[List[ASTNode]]
+    code_block: Union[List[ASTNode]]
+    else_block: str
+    else_if_block: str
 
 @dataclass
 class WhileStatement(ASTNode):
     condition: "Expression"
-    code_block: List[ASTNode]
+    code_block: Union[List[ASTNode]]
 
 @dataclass
 class ForStatement(ASTNode):
@@ -46,7 +47,12 @@ class ForStatement(ASTNode):
     start: str
     end: str
     step: Optional[Union[int, "Expression"]]
-    code_block: List[ASTNode]
+    code_block: Union[List[ASTNode], str]
+
+class ForEachStatement(ASTNode):
+    variable: str
+    loop_from: str
+    code_block: Union[List[ASTNode], str]
 
 @dataclass
 class ReturnStatement(ASTNode):

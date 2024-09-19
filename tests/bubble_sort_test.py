@@ -23,7 +23,8 @@ Test(
     test,
     test_name="bubble sort",
     test_type="parser",
-    print_tokens = True
+    print_tokens = False,
+    print_ASTNodes = True
 
 
-).run(write=True)
+).run(write=True, show_error_message=True)
