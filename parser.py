@@ -91,6 +91,7 @@ class Parser:
 
     def expression(self):
 
+        print("running")
         overall_values = ["+", "-", "/", "*", "(", ")"]
         operator_values = ["+", "-", "/", "*"]
         def initialise_stacks():
@@ -144,15 +145,16 @@ class Parser:
                     elif t == "/":
                         stack.append(left / right)
                     elif t == "*":
-                        stack.append(left * right)
-
+                        if isinstance(left, str) and isinstance(right, (int, float)):
+                            stack.append(left * int(right))  # Convert float to int for string multiplication
+                        elif isinstance(right, str) and isinstance(left, (int, float)):
+                            stack.append(right * int(left))
 
             return stack[0]
 
         output_queue = initialise_stacks()
         eval = evaluate_stacks(output_queue)
 
-        print("expression complete")
         # self.AST_nodes.append(Expression(type="Expression", value=eval))
         return eval
 
@@ -204,17 +206,13 @@ class Parser:
             self.expect('VARIABLE_DECLARATION')
             self.advance() # move up to var value
             if self.current_token.value != "AS":
-                if self.current_token.type == "STRING":
-                    value = self.current_token.value
-                    self.advance()
-                else:
-                    value =self.expression()
+                value = self.expression()
             else:
                 self.expect("TYPE")
                 if self.current_token.value in var_types and type_expectation(self.current_token['value']):
                     expected_type = self.current_token.value
                     self.expect("IDENTIFIER")
-                    value = self.current_token.value
+                    value = self.expression()
         else:
             print("EXPECTED IDENTIFIER")
             return False
