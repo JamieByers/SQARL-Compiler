@@ -67,9 +67,11 @@ class Tokeniser:
            n += self.current_char
            self.advance()
 
+        n = float(n)
         token = Token("NUMBER", n)
         self.tokens.append(token)
         return token
+
 
     def tokenise_quote(self) -> Token:
         qs = ""

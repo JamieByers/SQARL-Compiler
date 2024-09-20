@@ -40,7 +40,7 @@ def shunting_yard(tokens):
 
         if token.isdigit():
             output_queue.append(token)
-        
+
         elif token in operators:
             while operator_stack and operator_stack[-1] in operators and precedence[operator_stack[-1]] >= precedence[token]:
                 top_op = operator_stack.pop()
@@ -49,12 +49,12 @@ def shunting_yard(tokens):
 
         elif token == "(":
             operator_stack.append(token)
-        
+
         elif token == ")":
             while operator_stack and operator_stack[-1] != "(":
                 output_queue.append(operator_stack.pop())
-            operator_stack.pop()  
-        
+            operator_stack.pop()
+
         pos += 1
 
     while operator_stack:

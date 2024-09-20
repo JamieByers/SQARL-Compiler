@@ -21,14 +21,16 @@ class Test:
 
                     self.passed = True
             elif self.test_type == "parser":
-                    self.parser.parse()
-                    self.parser.display()
 
                     if self.print_tokens:
                         print(self.parser.lexer.tokens)
+
+                    self.parser.parse()
+                    self.parser.display()
+
                     if self.print_ASTNodes:
                         print(self.parser.AST_nodes)
-                        
+
                     if write == True:
                         self.parser.write()
 
