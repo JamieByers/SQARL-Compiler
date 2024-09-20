@@ -53,7 +53,7 @@ def shunting_yard(tokens):
         elif token == ")":
             while operator_stack and operator_stack[-1] != "(":
                 output_queue.append(operator_stack.pop())
-            operator_stack.pop()  # Pop the "("
+            operator_stack.pop()  
         
         pos += 1
 

@@ -89,6 +89,73 @@ class Parser:
 
         return statement
 
+    def expression(self):
+
+        operator_values = ["+", "-", "/", "*"]
+        def initialise_stacks():
+            tokens = []
+            others = []
+            operator_stack = []
+            precedence = {"+": 1, "-": 1, "*": 2, "/": 2}
+            output_queue = []
+
+            while self.current_token and self.current_token.type not in [ "KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT"]:
+                token = self.current_token.value
+                tokens.append(self.current_token)
+                self.advance()
+
+                if token not in operator_values:
+                    others.append(token)
+                
+                elif token in operator_values:
+                    # print("token: ", token, "opst1", operator_stack[-1], "opstprec", precedence[operator_stack[-1]], "pt", precedence[token])
+                    while operator_stack and operator_stack[-1] in operator_values and precedence[operator_stack[-1] >= precedence[token]]:
+                        output_queue.append(operator_stack.pop())
+                    operator_stack.append(token)
+                
+                elif token == "(":
+                    operator_stack.append(token)
+                
+                elif token == ")":
+                    while operator_stack and operator_stack[-1] != "(":
+                        output_queue.append(operator_stack.pop())
+                    operator_stack.pop()
+                
+            while operator_stack:
+                output_queue.append(operator_stack.pop())
+
+            return output_queue
+    
+        def evaluate_stacks(output_queue):
+            stack = []
+
+            for t in output_queue:
+                if t not in operator_values:
+                    stack.append(t)
+
+                else:
+                    right = stack.pop()
+                    left = stack.pop()
+
+                    if t == "+":
+                        stack.append(left + right)
+                    elif t == "-":
+                        stack.append(left - right)
+                    elif t == "/":
+                        stack.append(left / right)
+                    elif t == "*":
+                        stack.append(left * right)
+                
+
+            return stack[0]
+
+        output_queue = initialise_stacks()
+        eval = evaluate_stacks(output_queue)
+
+        self.AST_nodes.append(Expression(type="Expression", value=eval))
+        return eval
+
+
     def send_to_display_statement(self):
         self.advance()  # skip SEND
         to_print = ""
@@ -140,7 +207,7 @@ class Parser:
                     value = self.current_token.value
                     self.advance()
                 else:
-                    value =self.simple_statement()
+                    value =self.expression()
             else:
                 self.expect("TYPE")
                 if self.current_token.value in var_types and type_expectation(self.current_token['value']):

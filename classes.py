@@ -60,9 +60,7 @@ class ReturnStatement(ASTNode):
 
 @dataclass
 class Expression(ASTNode):
-    operator: str
-    left: Union[str, int, float, bool, 'Expression']
-    right: Optional[Union[str, int, float, bool, 'Expression']] = None
+    value: Union[str, int, float, bool]
 
 @dataclass
 class SimpleStatement(ASTNode):

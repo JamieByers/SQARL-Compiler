@@ -1,12 +1,16 @@
-from lexer import Tokeniser
+from tests.general_test import Test
 
-lexer = Tokeniser("""
-                        DECLARE var INITIALLY "Hello World!"
-                        DECLARE one INITIALLY 1
-                        DECLARE two INITIALLY 2
-                        DECLARE addition INITIALLY (1 + 2)
-                  """)
+test = """
 
-lexer.tokenise()
+      DECLARE variable INITIALLY 1+2/(3*4)
+      DECLARE variable INITIALLY "hello"
 
-print(lexer.tokens)
+"""
+
+Test(
+    test,
+    test_name="declaration",
+    test_type="parser",
+    print_tokens=False,
+    print_ASTNodes=True
+).run(show_error_message=True)
