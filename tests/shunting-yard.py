@@ -60,7 +60,6 @@ def shunting_yard(tokens):
     while operator_stack:
         output_queue.append(operator_stack.pop())
 
-    print(output_queue)
     eval = evaluate_RPN(output_queue)
     print("eval: ", eval)
 

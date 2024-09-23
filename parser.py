@@ -91,7 +91,6 @@ class Parser:
 
     def expression(self):
 
-        print("running")
         overall_values = ["+", "-", "/", "*", "(", ")"]
         operator_values = ["+", "-", "/", "*"]
         def initialise_stacks():
@@ -129,7 +128,6 @@ class Parser:
         def evaluate_stacks(output_queue):
             stack = []
 
-            print('output_queue', output_queue)
             for t in output_queue:
                 if t not in operator_values:
                     stack.append(t)
@@ -175,17 +173,6 @@ class Parser:
 
 
     def variable_declaration(self):
-        def type_expectation(self, expect):
-            if expect == "STRING" and self.lexer.tokens[self.pos+1].type == "PAREN":
-                return True
-            if expect == "INTEGER" and self.lexer.tokens[self.pos+1].isdigit():
-                return True
-            if expect == "REAl" and self.lexer.tokens[self.pos+1].isdigit():
-                return True
-            if expect == "BOOLEAN" and self.lexer.tokens[self.pos+1].value in ['TRUE', 'FALSE']:
-                return True
-
-            return False
 
         var_types = [
             "INTEGER",
@@ -209,10 +196,12 @@ class Parser:
                 value = self.expression()
             else:
                 self.expect("TYPE")
-                if self.current_token.value in var_types and type_expectation(self.current_token['value']):
+                if self.current_token.type == "TYPE":
                     expected_type = self.current_token.value
-                    self.expect("IDENTIFIER")
+                    self.advance()
                     value = self.expression()
+                else:
+                    raise Exception("Expected a type definition")
         else:
             print("EXPECTED IDENTIFIER")
             return False
@@ -226,16 +215,16 @@ class Parser:
     def variable_assignment(self):
         self.expect("IDENTIFIER")
 
-        variable_identifier = self.simple_statement()
+        variable_identifier = self.expression()
 
         self.advance() # skip past TO
 
-        variable_value = self.simple_statement()
+        variable_value = self.expression()
 
         statement = f"{variable_identifier} = {variable_value}\n"
 
         variable_value = str(variable_value)
-        self.AST_nodes.append(VariableAssignment(type="VariableAssignment", name=variable_identifier, value=variable_value))
+        self.AST_nodes.append(VariableAssignment(type="VariableAssignment", name=variable_identifier, value=variable_value, ))
         return statement
 
     def condition(self):
@@ -247,7 +236,7 @@ class Parser:
             condition += c
             self.advance()
 
-        self.AST_nodes.append(SimpleStatement(type="condition", value=condition))
+        self.AST_nodes.append(Condition(type="condition", value=condition))
         return condition
 
     def if_statement(self):
@@ -387,18 +376,45 @@ class Parser:
         return "    "*self.indent_level
 
     def get_params(self):
+
+        def checktype(val):
+            types = [
+                "CHAR",
+                "STRING",
+                "INTEGER",
+                "REAL",
+                "ARRAY",
+                "OBJECT",
+                "CLASS",
+                "FUNCTION", 
+            ]
+
+            if val in types:
+                return True 
+            return False
+
         self.expect("LPAREN")
+        self.advance() #skip (
         params = []
         while self.current_token.type != "RPAREN":
-            if self.current_token.type == "IDENTIFIER":
-                params.append(self.current_token.value)
-            self.advance()
+            if self.current_token.type == "TYPE":
+                param = Parameter()
+                if checktype(self.current_token.value):
+                    param.type = self.current_token.value
+                    self.expect("IDENTIFIER")
+                    param.value = self.current_token.value
+                    params.append(param)
+                    self.advance()
+                else:
+                    raise Exception("TYPE EXPECTED FOR PARAM. ERROR AT TOKEN "+self.current_token)
+            elif self.current_token.type == "COMMA":
+                self.advance()
 
         return params
 
     def return_statement(self):
         self.advance() # skip RETURN
-        returning = self.simple_statement()
+        returning = self.expression()
 
         code = f"return {returning}"
 
@@ -407,7 +423,7 @@ class Parser:
     def function_statement(self):
         self.expect("IDENTIFIER")
         function_identifier = self.current_token.value
-        params =  self.get_params()
+        params = self.get_params()
 
         type_translation = {
             "STRING": "string",
@@ -431,11 +447,13 @@ class Parser:
 
 
         code_block = self.parse_block()
+        param_identifiers = [param.value for param in params]
+        print(param_identifiers)
 
-        if len(params) > 0:
-            code = f"def {function_identifier}({' '.join(params)})"
-        elif len(params) == 1:
-            code = f"def {function_identifier}({params[0]})"
+        if len(param_identifiers) > 0:
+            code = f"def {function_identifier}({' '.join(param_identifiers)})"
+        elif len(param_identifiers) == 1:
+            code = f"def {function_identifier}({param_identifiers[0]})"
         else:
             code = f"def {function_identifier}()"
 

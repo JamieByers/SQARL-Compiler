@@ -2,7 +2,7 @@ from tests.general_test import Test
 
 test = """
 
-      DECLARE var INITIALLY "hello!"*3
+      DECLARE var INITIALLY AS STRING "hello!"*3
 
 """
 
