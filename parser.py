@@ -56,7 +56,7 @@ class Parser:
         elif self.current_token.type == "VARIABLE_ASSIGNMENT":
             statement = self.variable_assignment()
         elif self.current_token.type == "SUBPROGRAM":
-            statement =  self.function_statement()
+            statement =  self.function_declaration()
         elif self.current_token.type == "KEYWORD":
             if self.current_token.value == "IF":
                 statement =  self.if_statement()
@@ -90,6 +90,27 @@ class Parser:
         return statement
 
     def expression(self):
+
+        def check_if_function_call():
+            if self.current_token.type == "IDENTIFIER" and self.next_token() == "LPAREN":
+                handleFunctionCall()
+
+        def handleFunctionCall():
+            function_params = []
+            function_identifier = self.current_token.value
+            self.expect("LPAREN")
+            self.advance() # skip (
+            while self.current_token.type != "RPAREN":
+                if self.current_token.type != "COMMA":
+                    self.advance()
+
+                function_params.append(self.current_token.value)
+                self.advance()
+
+            return f"{function_identifier}({', '.join(params)})"
+
+        if check_if_function_call():
+            return handleFunctionCall()
 
         overall_values = ["+", "-", "/", "*", "(", ")"]
         operator_values = ["+", "-", "/", "*"]
@@ -386,11 +407,11 @@ class Parser:
                 "ARRAY",
                 "OBJECT",
                 "CLASS",
-                "FUNCTION", 
+                "FUNCTION",
             ]
 
             if val in types:
-                return True 
+                return True
             return False
 
         self.expect("LPAREN")
@@ -420,7 +441,7 @@ class Parser:
 
         return code
 
-    def function_statement(self):
+    def function_declaration(self):
         self.expect("IDENTIFIER")
         function_identifier = self.current_token.value
         params = self.get_params()
@@ -448,7 +469,6 @@ class Parser:
 
         code_block = self.parse_block()
         param_identifiers = [param.value for param in params]
-        print(param_identifiers)
 
         if len(param_identifiers) > 0:
             code = f"def {function_identifier}({' '.join(param_identifiers)})"
