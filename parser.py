@@ -80,14 +80,6 @@ class Parser:
 
         return statement
 
-    def simple_statement(self) -> str:
-        statement = ""
-        while self.current_token is not None and self.current_token.type not in [ "KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT"]:
-            statement += self.current_token.value
-            self.advance()
-
-
-        return statement
 
     def expression(self):
 
