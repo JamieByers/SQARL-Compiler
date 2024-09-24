@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 @dataclass
 class ASTNode:
     type: str
-    code: str = field(default=None, init=False)
+    code: str = field(default="", init=False)
 
 @dataclass
 class Program(ASTNode):
@@ -29,6 +29,11 @@ class FunctionDeclaration(ASTNode):
     params : List[str]
     code_block: Union[List[ASTNode]]
     return_type: Optional[str]
+
+@dataclass 
+class FunctionCall(ASTNode):
+    idenitifer: str
+    params: Union[str, int, float, bool, ASTNode]
 
 @dataclass
 class IfStatement(ASTNode):

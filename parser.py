@@ -92,8 +92,10 @@ class Parser:
     def expression(self):
 
         def check_if_function_call():
-            if self.current_token.type == "IDENTIFIER" and self.next_token() == "LPAREN":
-                handleFunctionCall()
+            next_token = self.next_token()
+            if self.current_token.type == "IDENTIFIER" and next_token.type == "LPAREN":
+                return True
+            return False
 
         def handleFunctionCall():
             function_params = []
@@ -101,16 +103,23 @@ class Parser:
             self.expect("LPAREN")
             self.advance() # skip (
             while self.current_token.type != "RPAREN":
-                if self.current_token.type != "COMMA":
+                if self.current_token.type == "COMMA":
                     self.advance()
 
                 function_params.append(self.current_token.value)
                 self.advance()
 
-            return f"{function_identifier}({', '.join(params)})"
+            self.advance() #skip )
 
-        if check_if_function_call():
-            return handleFunctionCall()
+            code = f"{function_identifier}({''.join(function_params)})"
+            ast_node = FunctionCall(type="FunctionCall", idenitifer=function_identifier, params=function_params,)
+            ast_node.code = code
+            return ast_node
+
+        function_call = check_if_function_call()
+        if function_call:
+            code = handleFunctionCall()
+            return code
 
         overall_values = ["+", "-", "/", "*", "(", ")"]
         operator_values = ["+", "-", "/", "*"]
@@ -173,6 +182,7 @@ class Parser:
 
         output_queue = initialise_stacks()
         eval = evaluate_stacks(output_queue)
+
 
         # self.AST_nodes.append(Expression(type="Expression", value=eval))
         return eval

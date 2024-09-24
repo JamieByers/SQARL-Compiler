@@ -11,7 +11,7 @@ Test(
         test,
         test_name = "func calling",
         test_type = "parser",
-        print_tokens = False,
+        print_tokens = True,
         print_ASTNodes = True
 
 ).run(show_error_message=True)
