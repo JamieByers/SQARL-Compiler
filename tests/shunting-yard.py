@@ -2,7 +2,7 @@ class Token:
     def __init__(self, value) -> None:
         self.value = value
 
-tokens = [Token("4"), Token("+"), Token("18"), Token("/"), Token("("), Token("9"), Token("-"), Token("3"), Token(")")]
+tokens = [Token("3"), Token("*"), Token("23"), Token("*"), Token("4"), Token("/"), Token("9")]
 
 def shunting_yard(tokens):
     pos = 0

@@ -163,6 +163,8 @@ class Tokeniser:
             "-": "MATH_EXPR",
             "*": "MATH_TERM",
             "/": "MATH_TERM",
+            "^": "MATH_TERM",
+            "MOD": "MATH_TERM",
             "WHILE": "KEYWORD",
             "DO": "BLOCK_START",
             "END": "KEYWORD",

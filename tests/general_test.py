@@ -13,6 +13,7 @@ class Test:
         self.parser = Parser(self.string)
 
     def run(self, write=False, show_error_message=False,):
+        print("test -\n", self.string)
         try:
             if self.test_type == "tokeniser":
                     self.tokeniser.tokenise()

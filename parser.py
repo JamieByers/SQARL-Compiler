@@ -113,15 +113,15 @@ class Parser:
             code = handleFunctionCall()
             return code
 
-        overall_values = ["+", "-", "/", "*", "(", ")"]
-        operator_values = ["+", "-", "/", "*"]
+        overall_values = ["+", "-", "/", "*", "(", ")", "*", "^", "MOD"]
+        operator_values = ["+", "-", "/", "*", "^", "MOD"]
         def initialise_stacks():
             tokens = []
             operator_stack = []
-            precedence = {"+": 1, "-": 1, "*": 2, "/": 2}
+            precedence = {"+": 1, "-": 1, "*": 2, "/": 2, "^": 3, "MOD": 2}
             output_queue = []
 
-            while self.current_token and self.current_token.type not in [ "KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT"]:
+            while self.current_token and self.current_token.type not in ["KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT"]:
                 token = self.current_token.value
                 tokens.append(self.current_token)
                 self.advance()
@@ -130,7 +130,8 @@ class Parser:
                     output_queue.append(token)
 
                 elif token in operator_values:
-                    while operator_stack and operator_stack[-1] in operator_values and precedence[operator_stack[-1]] >= precedence[token]:
+
+                    while operator_stack and operator_stack[-1] != "(" and precedence[operator_stack[-1]] >= precedence[token]:
                         output_queue.append(operator_stack.pop())
                     operator_stack.append(token)
 
@@ -151,28 +152,37 @@ class Parser:
             stack = []
 
             for t in output_queue:
+                print(t, stack)
                 if t not in operator_values:
                     stack.append(t)
 
                 else:
-                    right = stack.pop()
-                    left = stack.pop()
+                    if len(stack) > 1:
+                        right = stack.pop()
+                        left = stack.pop()
 
-                    if t == "+":
-                        stack.append(left + right)
-                    elif t == "-":
-                        stack.append(left - right)
-                    elif t == "/":
-                        stack.append(left / right)
-                    elif t == "*":
-                        if isinstance(left, str) and isinstance(right, (int, float)):
-                            stack.append(left * int(right))  # Convert float to int for string multiplication
-                        elif isinstance(right, str) and isinstance(left, (int, float)):
-                            stack.append(right * int(left))
+                        if t == "+":
+                            stack.append(left + right)
+                        elif t == "-":
+                            stack.append(left - right)
+                        elif t == "/":
+                            stack.append(left / right)
+                        elif t == "*":
+                            if isinstance(left, str) and isinstance(right, (int, float)):
+                                stack.append(left * int(right))  # Convert float to int for string multiplication
+                            elif isinstance(right, str) and isinstance(left, (int, float)):
+                                stack.append(right * int(left))
+                            else:
+                                stack.append(left * right)
+                        elif t == "^":
+                            stack.append(left ** right)
+                        elif t == "MOD":
+                            stack.append(left % right)
 
             return stack[0]
 
         output_queue = initialise_stacks()
+        print("output_queue", output_queue)
         eval = evaluate_stacks(output_queue)
 
 
