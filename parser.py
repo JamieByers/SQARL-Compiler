@@ -82,6 +82,8 @@ class Parser:
 
 
     def expression(self):
+        # -- TODO -- Add lists into the expression
+        # -- TODO -- fix ^ and MOD
 
         def check_if_function_call():
             next_token = self.next_token()
