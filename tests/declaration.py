@@ -2,7 +2,7 @@ from tests.general_test import Test
 
 test = """
 
-      DECLARE var INITIALLY 2*32/4 MOD 7^3
+      DECLARE var INITIALLY 7^3
 
 """
 

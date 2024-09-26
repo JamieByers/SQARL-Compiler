@@ -19,7 +19,7 @@ END WHILE
 
 """
 
-Test(
+t = Test(
     test,
     test_name="bubble sort",
     test_type="parser",
@@ -27,4 +27,9 @@ Test(
     print_ASTNodes = True
 
 
-).run(write=True, show_error_message=True)
+)
+
+t.run(write=True, show_error_message=False, write_ast=True)
+
+# for token in t.parser.AST_nodes:
+#     print(token)

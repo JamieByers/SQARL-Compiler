@@ -99,7 +99,7 @@ class Tokeniser:
             return self.tokenise_number()
         elif self.current_char == '"' or self.current_char == "'":
             return self.tokenise_quote()
-        elif self.current_char in ["[", "]", "(", ")", "{", "}", ",", "+", "-", "*", "/", "<", ">", "="]:
+        elif self.current_char in ["[", "]", "(", ")", "{", "}", ",", "+", "-", "*", "/", "<", ">", "=", "^"]:
             return self.match_token(self.current_char)
 
         else:

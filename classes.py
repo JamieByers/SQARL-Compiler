@@ -6,6 +6,7 @@ class ASTNode:
     type: str
     code: str = field(default="", init=False)
 
+
 @dataclass
 class Program(ASTNode):
     statements: List[ASTNode]
@@ -30,7 +31,7 @@ class FunctionDeclaration(ASTNode):
     code_block: Union[List[ASTNode]]
     return_type: Optional[str]
 
-@dataclass 
+@dataclass
 class FunctionCall(ASTNode):
     idenitifer: str
     params: Union[str, int, float, bool, ASTNode]

@@ -12,7 +12,7 @@ class Test:
         self.tokeniser = Tokeniser(self.string)
         self.parser = Parser(self.string)
 
-    def run(self, write=False, show_error_message=False,):
+    def run(self, write=False, show_error_message=False, write_ast=False):
         print("test -\n", self.string)
         try:
             if self.test_type == "tokeniser":
@@ -34,6 +34,11 @@ class Test:
 
                     if write == True:
                         self.parser.write()
+                    if write_ast == True:
+                        tokens = self.parser.AST_nodes
+                        with open("AST Nodes.py", "w") as file:
+                            for token in tokens:
+                                file.write(str(token)+"\n")
 
                     self.passed = True
 

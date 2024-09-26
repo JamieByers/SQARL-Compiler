@@ -82,14 +82,20 @@ class Parser:
 
 
     def expression(self):
-        # -- TODO -- Add lists into the expression
-        # -- TODO -- fix ^ and MOD
+        def check_if_array():
+            if self.current_token.type == "LSQPAREN":
+                return True
+            return False
 
         def check_if_function_call():
             next_token = self.next_token()
             if self.current_token.type == "IDENTIFIER" and next_token.type == "LPAREN":
                 return True
             return False
+
+        def check_if_index_fetch():
+            if self.current_token.type == "IDENTIFIER" and self.next_token().value == "[":
+                return True
 
         def handleFunctionCall():
             function_params = []
@@ -110,87 +116,143 @@ class Parser:
             ast_node.code = code
             return ast_node
 
-        function_call = check_if_function_call()
-        if function_call:
-            code = handleFunctionCall()
-            return code
+        def handleArrayExp():
+            self.advance() #skip past (
+            array_elements = []
+            while self.current_token.value != "]":
+                if self.current_token.type == "COMMA":
+                    self.advance()
+                else:
+                    array_elements.append(str(self.current_token.value))
+                    self.advance()
 
-        overall_values = ["+", "-", "/", "*", "(", ")", "*", "^", "MOD"]
-        operator_values = ["+", "-", "/", "*", "^", "MOD"]
-        def initialise_stacks():
-            tokens = []
-            operator_stack = []
-            precedence = {"+": 1, "-": 1, "*": 2, "/": 2, "^": 3, "MOD": 2}
-            output_queue = []
+            self.advance() #skip ]
 
-            while self.current_token and self.current_token.type not in ["KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT"]:
-                token = self.current_token.value
-                tokens.append(self.current_token)
+            el = ArrayElement(type="Array", elements=array_elements)
+            return f"[{', '.join([str(i) for i in array_elements])}]"
+
+        def handleIndexFetch():
+
+            fetch = ""
+            identifier = self.current_token.value
+            fetch += identifier
+
+            self.expect("LSQPAREN")
+            fetch += "["
+            self.advance() #move past [
+
+            index_values = []
+            while self.current_token.value != "]":
+                index_values.append(self.current_token.value)
                 self.advance()
 
-                if token not in overall_values:
-                    output_queue.append(token)
+            # -- TODO -- create a small expression function that doesnt advance, or does just simply up until RSQparen, or add to current exp?
+            fetch += "".join(index_values) #TEMPORARY FIX
 
-                elif token in operator_values:
+            fetch += "]"
+            self.advance() #move past ]
 
-                    while operator_stack and operator_stack[-1] != "(" and precedence[operator_stack[-1]] >= precedence[token]:
-                        output_queue.append(operator_stack.pop())
-                    operator_stack.append(token)
-
-                elif token == "(":
-                    operator_stack.append(token)
-
-                elif token == ")":
-                    while operator_stack and operator_stack[-1] != "(":
-                        output_queue.append(operator_stack.pop())
-                    operator_stack.pop()
-
-            while operator_stack:
-                output_queue.append(operator_stack.pop())
-
-            return output_queue
-
-        def evaluate_stacks(output_queue):
-            stack = []
-
-            for t in output_queue:
-                print(t, stack)
-                if t not in operator_values:
-                    stack.append(t)
-
-                else:
-                    if len(stack) > 1:
-                        right = stack.pop()
-                        left = stack.pop()
-
-                        if t == "+":
-                            stack.append(left + right)
-                        elif t == "-":
-                            stack.append(left - right)
-                        elif t == "/":
-                            stack.append(left / right)
-                        elif t == "*":
-                            if isinstance(left, str) and isinstance(right, (int, float)):
-                                stack.append(left * int(right))  # Convert float to int for string multiplication
-                            elif isinstance(right, str) and isinstance(left, (int, float)):
-                                stack.append(right * int(left))
-                            else:
-                                stack.append(left * right)
-                        elif t == "^":
-                            stack.append(left ** right)
-                        elif t == "MOD":
-                            stack.append(left % right)
-
-            return stack[0]
-
-        output_queue = initialise_stacks()
-        print("output_queue", output_queue)
-        eval = evaluate_stacks(output_queue)
+            return fetch
 
 
-        # self.AST_nodes.append(Expression(type="Expression", value=eval))
-        return eval
 
+        def handleArithmaticExpression():
+            overall_values = ["+", "-", "/", "*", "(", ")", "*", "^", "MOD"]
+            operator_values = ["+", "-", "/", "*", "^", "MOD"]
+            def initialise_stacks():
+                tokens = []
+                operator_stack = []
+                precedence = {"+": 1, "-": 1, "*": 2, "/": 2, "^": 3, "MOD": 2}
+                output_queue = []
+
+                while self.current_token and self.current_token.type not in ["KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT"]:
+                    token = self.current_token.value
+                    tokens.append(self.current_token)
+                    self.advance()
+
+                    if token not in overall_values:
+                        output_queue.append(token)
+
+                    elif token in operator_values:
+
+                        while operator_stack and operator_stack[-1] != "(" and precedence[operator_stack[-1]] >= precedence[token]:
+                            output_queue.append(operator_stack.pop())
+                        operator_stack.append(token)
+
+                    elif token == "(":
+                        operator_stack.append(token)
+
+                    elif token == ")":
+                        while operator_stack and operator_stack[-1] != "(":
+                            output_queue.append(operator_stack.pop())
+                        operator_stack.pop()
+
+                while operator_stack:
+                    output_queue.append(operator_stack.pop())
+
+                return output_queue
+
+            def evaluate_stacks(output_queue):
+                stack = []
+
+                for t in output_queue:
+                    if t not in operator_values:
+                        stack.append(t)
+
+                    else:
+                        if len(stack) > 1:
+                            right = stack.pop()
+                            left = stack.pop()
+
+                            if t == "+":
+                                stack.append(left + right)
+                            elif t == "-":
+                                print(left, right)
+                                if isinstance(left, str) and isinstance(right, (int, float)):
+                                    stack.append(left+"-"+str(right))
+                                elif isinstance(right, str) and isinstance(left, (int, float)):
+                                    stack.append(right+"-"+str(left))
+                                else:
+                                    stack.append(left - right)
+
+                            elif t == "/":
+                                stack.append(left / right)
+                            elif t == "*":
+                                if isinstance(left, str) and isinstance(right, (int, float)):
+                                    stack.append(left * int(right))  # Convert float to int for string multiplication
+                                elif isinstance(right, str) and isinstance(left, (int, float)):
+                                    stack.append(right * int(left))
+                                else:
+                                    stack.append(left * right)
+                            elif t == "^":
+                                stack.append(left ** right)
+                            elif t == "MOD":
+                                stack.append(left % right)
+
+                return stack[0]
+
+            output_queue = initialise_stacks()
+            eval = evaluate_stacks(output_queue)
+
+            # self.AST_nodes.append(Expression(type="Expression", value=eval))
+            return eval
+
+
+
+        is_array = check_if_array()
+        is_function_call = check_if_function_call()
+        is_array_fetch = check_if_index_fetch()
+
+        if is_array:
+            code = handleArrayExp()
+        elif is_function_call:
+            code = handleFunctionCall()
+        elif is_array_fetch:
+            code = handleIndexFetch()
+        else:
+            code = handleArithmaticExpression()
+
+        return code
 
     def send_to_display_statement(self):
         self.advance()  # skip SEND
@@ -259,20 +321,22 @@ class Parser:
         statement = f"{variable_identifier} = {variable_value}\n"
 
         variable_value = str(variable_value)
-        self.AST_nodes.append(VariableAssignment(type="VariableAssignment", name=variable_identifier, value=variable_value, ))
+        exp = VariableAssignment(type="VariableAssignment", name=variable_identifier, value=variable_value, )
+        exp.code = statement.strip("\n")
+        self.AST_nodes.append(exp)
         return statement
 
     def condition(self):
         condition = ""
         while self.current_token.value not in ["DO", "THEN"]:
-            c = self.current_token.value
+            c = str(self.current_token.value)
             if c in ["AND", "OR"]:
                 c = f" {c.lower()} "
             condition += c
             self.advance()
 
-        self.AST_nodes.append(Condition(type="condition", value=condition))
-        return condition
+        # self.AST_nodes.append(Condition(type="condition", value=condition))
+        return Condition(type="condition", value=condition)
 
     def if_statement(self):
         self.advance() # move past if towards conidition
@@ -433,7 +497,7 @@ class Parser:
         params = []
         while self.current_token.type != "RPAREN":
             if self.current_token.type == "TYPE":
-                param = Parameter()
+                param = Parameter(type="Parameter")
                 if checktype(self.current_token.value):
                     param.type = self.current_token.value
                     self.expect("IDENTIFIER")
@@ -501,6 +565,7 @@ class Parser:
 
         self.AST_nodes.append(FunctionDeclaration(type="FunctionDeclaration", name=function_identifier, params=params, code_block=code_block, return_type=type_expected))
         return code
+
 
 
 
