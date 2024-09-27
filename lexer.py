@@ -1,10 +1,6 @@
-from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
+from classes import Token
 
-@dataclass
-class Token:
-    type: str
-    value: str
 
 class Tokeniser:
     def __init__(self, string: str):
@@ -231,5 +227,6 @@ class Tokeniser:
         while self.current_char is not None:
             self.next_token()
 
+        self.tokens.append(Token(type="EOF", value=""))
         return self.tokens
 

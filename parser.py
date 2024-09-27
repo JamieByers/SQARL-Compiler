@@ -11,6 +11,7 @@ class Parser:
         self.statements = []
         self.AST_nodes = []
         self.indent_level = 0
+        self.variables = {}
 
 
     def advance(self, amount=1) -> None:
@@ -38,45 +39,59 @@ class Parser:
 
     def parse(self) -> List:
         while self.pos <= len(self.lexer.tokens) and self.current_token is not None:
-
             statement = self.statement()
-            self.statements.append(statement)
+            if statement:
+                self.statements.append(statement)
 
         return self.statements
 
-    def write(self) -> List:
+    def write(self) -> None:
         with open("output_file.py", "w+") as file:
             for statement in self.statements:
                 file.write(statement)
 
 
     def statement(self):
-        if self.current_token.type == "VARIABLE_DECLARATION":
-            statement =  self.variable_declaration()
-        elif self.current_token.type == "VARIABLE_ASSIGNMENT":
-            statement = self.variable_assignment()
-        elif self.current_token.type == "SUBPROGRAM":
-            statement =  self.function_declaration()
-        elif self.current_token.type == "KEYWORD":
-            if self.current_token.value == "IF":
-                statement =  self.if_statement()
-            if self.current_token.value == "FOR":
-                statement =  self.for_statement()
-            elif self.current_token.value == "WHILE":
-                statement =  self.while_statement()
-            elif self.current_token.value == "SEND":
-                statement =  self.send_to_display_statement()
-            elif self.current_token.value == "RETURN":
-                statement =  self.return_statement()
-        elif self.current_token.type == "KEYWORD_CONTINUED":
-                if self.current_token.value == "ELSE IF":
-                    statement = self.else_if_statement()
-                elif self.current_token.value == "ELSE":
-                    statement = self.else_statement()
-        elif self.current_token.type == "END":
+        statement = None
+        if self.current_token:
+            if self.current_token.type == "VARIABLE_DECLARATION":
+                statement =  self.variable_declaration()
+            elif self.current_token.type == "VARIABLE_ASSIGNMENT":
+                statement = self.variable_assignment()
+            elif self.current_token.type == "SUBPROGRAM":
+                statement =  self.function_declaration()
+            elif self.current_token.type == "KEYWORD":
+                if self.current_token.value == "IF":
+                    statement =  self.if_statement()
+                if self.current_token.value == "FOR":
+                    statement =  self.for_statement()
+                elif self.current_token.value == "WHILE":
+                    statement =  self.while_statement()
+                elif self.current_token.value == "SEND":
+                    statement =  self.send_to_display_statement()
+                elif self.current_token.value == "RETURN":
+                    statement =  self.return_statement()
+            elif self.current_token.type == "KEYWORD_CONTINUED":
+                    if self.current_token.value == "ELSE IF":
+                        statement = self.else_if_statement()
+                    elif self.current_token.value == "ELSE":
+                        statement = self.else_statement()
+            elif self.current_token.type == "END":
+                self.advance()
+            elif self.current_token.type == "EOF":
+                self.current_token = None
+                self.advance()
+                return None
+            else:
+                print("statement failed", self.current_token, self.pos)
+
+        return statement
+
+    def simple_statement(self):
+        statement = ""
+        while self.current_token.type not in ["KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT", "EOF"]:
+            statement += str(self.current_token.value)
             self.advance()
-        else:
-            print("statement failed", self.current_token, self.pos)
 
         return statement
 
@@ -98,7 +113,8 @@ class Parser:
                 return True
 
         def handleFunctionCall():
-            function_params = []
+            # -- TODO -- add standard algorithms
+            function_params: List[str] = []
             function_identifier = self.current_token.value
             self.expect("LPAREN")
             self.advance() # skip (
@@ -111,7 +127,9 @@ class Parser:
 
             self.advance() #skip )
 
-            code = f"{function_identifier}({''.join(function_params)})"
+            additional_context = self.simple_statement()
+
+            code = f"{function_identifier}({''.join(function_params)})" + additional_context
             ast_node = FunctionCall(type="FunctionCall", idenitifer=function_identifier, params=function_params,)
             ast_node.code = code
             return ast_node
@@ -128,8 +146,9 @@ class Parser:
 
             self.advance() #skip ]
 
+            #f"[{', '.join([str(i) for i in array_elements])}]"
             el = ArrayElement(type="Array", elements=array_elements)
-            return f"[{', '.join([str(i) for i in array_elements])}]"
+            return el
 
         def handleIndexFetch():
 
@@ -152,11 +171,13 @@ class Parser:
             fetch += "]"
             self.advance() #move past ]
 
-            return fetch
+            exp = Expression(type="Expression", value=fetch)
+            return exp
 
 
 
         def handleArithmaticExpression():
+            # -- TODO -- add back variable values dict so values can be added here rather than just "identifier+identifier"
             overall_values = ["+", "-", "/", "*", "(", ")", "*", "^", "MOD"]
             operator_values = ["+", "-", "/", "*", "^", "MOD"]
             def initialise_stacks():
@@ -165,7 +186,7 @@ class Parser:
                 precedence = {"+": 1, "-": 1, "*": 2, "/": 2, "^": 3, "MOD": 2}
                 output_queue = []
 
-                while self.current_token and self.current_token.type not in ["KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT"]:
+                while self.current_token and self.current_token.type not in ["KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT", "EOF"]:
                     token = self.current_token.value
                     tokens.append(self.current_token)
                     self.advance()
@@ -204,25 +225,47 @@ class Parser:
                             right = stack.pop()
                             left = stack.pop()
 
+                            if left in self.variables.keys():
+                                left = self.variables[left]
+                                if isinstance(left, (Expression)):
+                                    left = left.value
+                                    if not isinstance(left, (str, int, float)):
+                                        left = str(left)
+                            if right in self.variables.keys():
+                                right = self.variables[right]
+                                if isinstance(right, (Expression)):
+                                    right = right.value
+                                    if not isinstance(right,(str, int,float)):
+                                        right = str(right)
+
+                            print("leftright",left, right)
+
                             if t == "+":
-                                stack.append(left + right)
+                                if isinstance(left, (int,float)) and isinstance(right, (int, float)):
+                                    stack.append(left + right)
+                                else:
+                                    stack.append(str(left) + str(right))
                             elif t == "-":
-                                print(left, right)
                                 if isinstance(left, str) and isinstance(right, (int, float)):
                                     stack.append(left+"-"+str(right))
                                 elif isinstance(right, str) and isinstance(left, (int, float)):
                                     stack.append(right+"-"+str(left))
-                                else:
+                                elif isinstance(left, str) and isinstance(right, str):
+                                    raise Exception(f"Cannot subtract two strings: {left}-{right}")
+                                elif isinstance(left, (int,float)) and isinstance(right, (int,float)):
                                     stack.append(left - right)
 
                             elif t == "/":
-                                stack.append(left / right)
+                                if (left.isdigit == False or right.isdigit() == False):
+                                    raise Exception(f"Cannot divide strings or other: {left}-{right}")
+                                elif left.isdigit() and right.isdigit():
+                                    stack.append(left / right)
                             elif t == "*":
                                 if isinstance(left, str) and isinstance(right, (int, float)):
                                     stack.append(left * int(right))  # Convert float to int for string multiplication
                                 elif isinstance(right, str) and isinstance(left, (int, float)):
                                     stack.append(right * int(left))
-                                else:
+                                elif isinstance(left, (int,float)) and isinstance(right, (int,float)):
                                     stack.append(left * right)
                             elif t == "^":
                                 stack.append(left ** right)
@@ -233,9 +276,9 @@ class Parser:
 
             output_queue = initialise_stacks()
             eval = evaluate_stacks(output_queue)
-
+            exp = Expression(type="Expression", value=eval)
             # self.AST_nodes.append(Expression(type="Expression", value=eval))
-            return eval
+            return exp
 
 
 
@@ -268,17 +311,10 @@ class Parser:
         self.advance()
         return code
 
+    def add_variable(self, identifier, value):
+        self.variables[identifier] = value
 
     def variable_declaration(self):
-
-        var_types = [
-            "INTEGER",
-            "CHARARACTER",
-            "REAL",
-            "BOOLEAN",
-            "ARRAY",
-        ]
-        var = ""
         identifier = ""
         value = ""
         expected_type = None
@@ -291,20 +327,26 @@ class Parser:
             self.advance() # move up to var value
             if self.current_token.value != "AS":
                 value = self.expression()
+                exact_value = value.value
             else:
                 self.expect("TYPE")
                 if self.current_token.type == "TYPE":
                     expected_type = self.current_token.value
                     self.advance()
                     value = self.expression()
+                    exact_value = value.value
                 else:
                     raise Exception("Expected a type definition")
         else:
             print("EXPECTED IDENTIFIER")
             return False
 
-        code = f"{identifier} = {value} \n"
-        self.AST_nodes.append(VariableDeclaration(type="VariableDeclaration", name=identifier, initial_value = value, var_type=expected_type ))
+        code = f"{identifier} = {exact_value} \n"
+        exp = VariableDeclaration(type="VariableDeclaration", idenitifer=identifier, initial_value = value, var_type=expected_type )
+        exp.code = code
+        self.AST_nodes.append(exp)
+        self.add_variable(identifier, exact_value)
+
         return code
 
 
@@ -319,9 +361,10 @@ class Parser:
         variable_value = self.expression()
 
         statement = f"{variable_identifier} = {variable_value}\n"
+        self.add_variable(variable_identifier, variable_value)
 
         variable_value = str(variable_value)
-        exp = VariableAssignment(type="VariableAssignment", name=variable_identifier, value=variable_value, )
+        exp = VariableAssignment(type="VariableAssignment", idenitifer=variable_identifier, value=variable_value, )
         exp.code = statement.strip("\n")
         self.AST_nodes.append(exp)
         return statement
@@ -335,7 +378,6 @@ class Parser:
             condition += c
             self.advance()
 
-        # self.AST_nodes.append(Condition(type="condition", value=condition))
         return Condition(type="condition", value=condition)
 
     def if_statement(self):
@@ -348,8 +390,8 @@ class Parser:
         code = f"if {condition}:\n"
         code += code_block
 
-        else_if_block = None
-        else_block = None
+        else_if_block = ""
+        else_block = ""
 
         if self.current_token.value == "ELSE IF":
             else_if_block = self.else_if_statement()
@@ -426,7 +468,7 @@ class Parser:
             code = f"for {for_loop_identifier} in {looping_from}: \n"
             code += for_code
 
-            self.AST_nodes.append(ForEachStatement(type="ForEachStatement", variable=for_loop_identifier, loop_from=looping_from, code_block=for_block))
+            self.AST_nodes.append(ForEachStatement(type="ForEachStatement", variable=for_loop_identifier, loop_from=looping_from, code_block=for_code))
             return code
 
         else:
@@ -452,7 +494,7 @@ class Parser:
             self.advance() # skip past THEN
 
         block_statements = []
-        while self.current_token.type not in ["END", "KEYWORD_CONTINUED"]:
+        while self.current_token.type not in ["END", "KEYWORD_CONTINUED", "EOF"]:
             statement = self.statement()
             block_statements.append(statement)
 
@@ -497,7 +539,7 @@ class Parser:
         params = []
         while self.current_token.type != "RPAREN":
             if self.current_token.type == "TYPE":
-                param = Parameter(type="Parameter")
+                param = Parameter()
                 if checktype(self.current_token.value):
                     param.type = self.current_token.value
                     self.expect("IDENTIFIER")
@@ -555,7 +597,7 @@ class Parser:
         else:
             code = f"def {function_identifier}()"
 
-        if expecting_type:
+        if expecting_type and type_expected:
             code += f" -> {type_translation[type_expected]}: \n"
         else:
             code += ":\n"

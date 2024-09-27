@@ -18,9 +18,6 @@ ELSE
 SET high TO mid–1
 END IF
 END WHILE
-
-
-
 """
 
 Test(

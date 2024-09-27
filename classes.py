@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Any
 from dataclasses import dataclass, field
 
 @dataclass
@@ -11,16 +11,20 @@ class ASTNode:
 class Program(ASTNode):
     statements: List[ASTNode]
 
+@dataclass
+class Token:
+    type: str
+    value: str
 
 @dataclass
 class VariableDeclaration(ASTNode):
-    name: str
-    initial_value: Union[str, int, float, bool]
+    idenitifer: Any
+    initial_value: Any
     var_type: Optional[Union[str,type]]
 
 @dataclass
 class VariableAssignment(ASTNode):
-    name: str
+    idenitifer: Any
     value: Union[str, int ,float, bool]
 
 
@@ -28,25 +32,25 @@ class VariableAssignment(ASTNode):
 class FunctionDeclaration(ASTNode):
     name: str
     params : List[str]
-    code_block: Union[List[ASTNode]]
+    code_block: Union[List[ASTNode], str]
     return_type: Optional[str]
 
 @dataclass
 class FunctionCall(ASTNode):
     idenitifer: str
-    params: Union[str, int, float, bool, ASTNode]
+    params: Union[str, int, float, bool, ASTNode, List[str]]
 
 @dataclass
 class IfStatement(ASTNode):
-    condition: "Expression"
-    code_block: Union[List[ASTNode]]
+    condition: "Condition"
+    code_block: Union[List[ASTNode], str]
     else_block: str
     else_if_block: str
 
 @dataclass
 class WhileStatement(ASTNode):
-    condition: "Expression"
-    code_block: Union[List[ASTNode]]
+    condition: "Condition"
+    code_block: Union[List[ASTNode], str]
 
 @dataclass
 class ForStatement(ASTNode):
@@ -72,13 +76,17 @@ class Expression(ASTNode):
 
 @dataclass
 class SimpleStatement(ASTNode):
-    value:  Union[str, int, float, bool, 'Expression'] = None
+    value:  Union[str, int, float, bool, 'Expression'] = ""
 
 @dataclass
 class Condition(ASTNode):
-    value: Union[str, int, float, bool, 'Expression'] = None
+    value: Union[str, int, float, bool, 'Expression'] = ""
 
 @dataclass
 class Parameter:
-    type: Union[str] = ""
     value: str = ""
+    type: str = ""
+
+@dataclass
+class ArrayElement(ASTNode):
+    elements: List[Any]
