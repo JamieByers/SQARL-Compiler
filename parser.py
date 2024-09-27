@@ -114,8 +114,17 @@ class Parser:
 
         def handleFunctionCall():
             # -- TODO -- add standard algorithms
+
+            #missing ord chr random
+            standard_algorithms = {
+                "length": "len",
+            }
+
             function_params: List[str] = []
             function_identifier = self.current_token.value
+            if function_identifier in standard_algorithms.keys():
+                function_identifier = standard_algorithms[function_identifier]
+
             self.expect("LPAREN")
             self.advance() # skip (
             while self.current_token.type != "RPAREN":
@@ -130,7 +139,7 @@ class Parser:
             additional_context = self.simple_statement()
 
             code = f"{function_identifier}({''.join(function_params)})" + additional_context
-            ast_node = FunctionCall(type="FunctionCall", idenitifer=function_identifier, params=function_params,)
+            ast_node = FunctionCall(type="FunctionCall", idenitifer=function_identifier, params=function_params,value=code)
             ast_node.code = code
             return ast_node
 
@@ -177,7 +186,6 @@ class Parser:
 
 
         def handleArithmaticExpression():
-            # -- TODO -- add back variable values dict so values can be added here rather than just "identifier+identifier"
             overall_values = ["+", "-", "/", "*", "(", ")", "*", "^", "MOD"]
             operator_values = ["+", "-", "/", "*", "^", "MOD"]
             def initialise_stacks():
