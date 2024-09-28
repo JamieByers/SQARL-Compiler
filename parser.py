@@ -1,4 +1,5 @@
 from typing import List
+import code_generator
 from lexer import Tokeniser
 from classes import *
 
@@ -161,6 +162,7 @@ class Parser:
                 idenitifer=function_identifier,
                 params=function_params,
                 value=code,
+                code=code
             )
             ast_node.code = code
             return ast_node
@@ -202,7 +204,7 @@ class Parser:
             fetch += "]"
             self.advance()  # move past ]
 
-            exp = Expression(type="Expression", value=fetch)
+            exp = Expression(type="Expression", value=fetch, code=fetch)
             return exp
 
         def handleArithmaticExpression():
@@ -339,7 +341,7 @@ class Parser:
 
             output_queue = initialise_stacks()
             eval = evaluate_stacks(output_queue)
-            exp = Expression(type="Expression", value=eval)
+            exp = Expression(type="Expression", value=eval, code=str(eval))
             # self.AST_nodes.append(Expression(type="Expression", value=eval))
             return exp
 
@@ -370,7 +372,8 @@ class Parser:
         code = f"print({to_print})"
 
         self.advance()
-        return code
+        exp = DisplayStatement(type="DisplayStatement", value=to_print, code=code)
+        return exp
 
     def add_variable(self, identifier, value):
         self.variables[identifier] = value
@@ -408,6 +411,7 @@ class Parser:
             idenitifer=identifier,
             initial_value=value,
             var_type=expected_type,
+            code=code
         )
         exp.code = code
         self.AST_nodes.append(exp)
@@ -433,6 +437,7 @@ class Parser:
             type="VariableAssignment",
             idenitifer=variable_identifier,
             value=variable_value,
+            code=statement
         )
         exp.code = statement.strip("\n")
         self.AST_nodes.append(exp)
@@ -447,7 +452,7 @@ class Parser:
             condition += c
             self.advance()
 
-        return Condition(type="condition", value=condition)
+        return Condition(type="condition", value=condition, code=condition)
 
     def if_statement(self):
         self.advance()  # move past if towards conidition
@@ -473,6 +478,7 @@ class Parser:
                 code_block=code_block,
                 else_block=else_block,
                 else_if_block=else_if_block,
+                code=code
             )
         )
         return code
@@ -530,6 +536,7 @@ class Parser:
                     end=loop_length,
                     step=step_count,
                     code_block=for_block,
+                    code=code
                 )
             )
             return code
@@ -553,6 +560,7 @@ class Parser:
                     variable=for_loop_identifier,
                     loop_from=looping_from,
                     code_block=for_code,
+                    code=code
                 )
             )
             return code
@@ -571,7 +579,7 @@ class Parser:
 
         self.AST_nodes.append(
             WhileStatement(
-                type="WhileStatement", condition=condition, code_block=code_block
+                type="WhileStatement", condition=condition, code_block=code_block, code=code
             )
         )
         return code
@@ -695,6 +703,7 @@ class Parser:
                 params=params,
                 code_block=code_block,
                 return_type=type_expected,
+                code=code
             )
         )
         return code

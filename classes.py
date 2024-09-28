@@ -1,10 +1,10 @@
 from typing import List, Optional, Union, Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 @dataclass
 class ASTNode:
     type: str
-    code: str = field(default="", init=False)
+    code: str
 
 
 @dataclass
@@ -27,6 +27,9 @@ class VariableAssignment(ASTNode):
     idenitifer: Any
     value: Any
 
+@dataclass
+class DisplayStatement(ASTNode):
+    value: Any
 
 @dataclass
 class FunctionDeclaration(ASTNode):
