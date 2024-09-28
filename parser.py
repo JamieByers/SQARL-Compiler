@@ -9,7 +9,7 @@ class Parser:
         self.lexer.tokenise()
         self.pos = 0
         self.current_token = (
-            self.lexer.tokens[self.pos] if self.lexer.tokens else Token("", "")
+            self.lexer.tokens[self.pos] if self.lexer.tokens else None
         )
         self.statements = []
         self.AST_nodes = []
@@ -85,15 +85,12 @@ class Parser:
 
         return keyword_types[self.current_token.value]()
 
-
     def keyword_continued(self):
         keyword_cont_types = {
             "ELSE": self.else_statement,
             "ELSE IF": self.else_if_statement,
         }
         return keyword_cont_types[self.current_token.value]
-
-
 
     def simple_statement(self):
         statement = ""
@@ -281,7 +278,6 @@ class Parser:
                                     if not isinstance(right, (str, int, float)):
                                         right = str(right)
 
-
                             if t == "+":
                                 if isinstance(left, (int, float)) and isinstance(
                                     right, (int, float)
@@ -308,11 +304,16 @@ class Parser:
                                     stack.append(left - right)
 
                             elif t == "/":
-                                if isinstance(left, (int,float)) is False or isinstance(right, (int, float)) is False:
+                                if (
+                                    isinstance(left, (int, float)) is False
+                                    or isinstance(right, (int, float)) is False
+                                ):
                                     raise Exception(
                                         f"Cannot divide strings or other: {left}-{right}"
                                     )
-                                elif isinstance(left, (int,float)) and isinstance(right, (int, float)):
+                                elif isinstance(left, (int, float)) and isinstance(
+                                    right, (int, float)
+                                ):
                                     stack.append(left / right)
                             elif t == "*":
                                 if isinstance(left, str) and isinstance(
@@ -424,7 +425,6 @@ class Parser:
 
         variable_value = self.expression()
         variable_value_value = variable_value.value
-
 
         statement = f"{variable_identifier_value} = {variable_value_value}\n"
         self.add_variable(variable_identifier_value, variable_value_value)
@@ -655,16 +655,14 @@ class Parser:
         self.expect("IDENTIFIER")
         function_identifier = self.current_token.value
         params = self.get_params()
-
         type_translation = {
-            "STRING": "string",
-            "CHARACTER": "string",
+            "STRING": "str",
+            "CHARACTER": "str",
             "INTEGER": "int",
             "REAL": "float",
             "BOOLEAN": "bool",
             "ARRAY": "LIST",
         }
-
         expecting_type = False
         type_expected = None
         next_token = self.next_token()
@@ -688,7 +686,6 @@ class Parser:
             code += f" -> {type_translation[type_expected]}: \n"
         else:
             code += ":\n"
-
         code += code_block
 
         self.AST_nodes.append(
