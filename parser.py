@@ -55,40 +55,45 @@ class Parser:
                 file.write(statement)
 
     def statement(self):
-        statement = None
-        if self.current_token:
-            if self.current_token.type == "VARIABLE_DECLARATION":
-                statement = self.variable_declaration()
-            elif self.current_token.type == "VARIABLE_ASSIGNMENT":
-                statement = self.variable_assignment()
-            elif self.current_token.type == "SUBPROGRAM":
-                statement = self.function_declaration()
-            elif self.current_token.type == "KEYWORD":
-                if self.current_token.value == "IF":
-                    statement = self.if_statement()
-                if self.current_token.value == "FOR":
-                    statement = self.for_statement()
-                elif self.current_token.value == "WHILE":
-                    statement = self.while_statement()
-                elif self.current_token.value == "SEND":
-                    statement = self.send_to_display_statement()
-                elif self.current_token.value == "RETURN":
-                    statement = self.return_statement()
-            elif self.current_token.type == "KEYWORD_CONTINUED":
-                if self.current_token.value == "ELSE IF":
-                    statement = self.else_if_statement()
-                elif self.current_token.value == "ELSE":
-                    statement = self.else_statement()
-            elif self.current_token.type == "END":
-                self.advance()
-            elif self.current_token.type == "EOF":
-                self.current_token = None
-                self.advance()
-                return None
-            else:
-                raise Exception("statement failed", self.current_token, self.pos)
+        statement_types = {
+            "VARIABLE_DECLARATION": self.variable_declaration,
+            "VARIABLE_ASSIGNMENT": self.variable_assignment,
+            "KEYWORD": self.keyword,
+            "KEYWORD_CONTINUED": self.keyword_continued,
+            "SUBPROGRAM": self.function_declaration,
+        }
 
-        return statement
+        if self.current_token.type in statement_types:
+            return statement_types[self.current_token.type]()
+        elif self.current_token.type == "END":
+            self.advance()
+        elif self.current_token.type == "EOF":
+            self.current_token = None
+            self.advance()
+            return None
+        else:
+            raise Exception("Token not recognised")
+
+    def keyword(self):
+        keyword_types = {
+            "IF": self.if_statement,
+            "FOR": self.for_statement,
+            "WHILE": self.while_statement,
+            "SEND": self.send_to_display_statement,
+            "RETURN": self.return_statement,
+        }
+
+        return keyword_types[self.current_token.value]()
+
+
+    def keyword_continued(self):
+        keyword_cont_types = {
+            "ELSE": self.else_statement,
+            "ELSE IF": self.else_if_statement,
+        }
+        return keyword_cont_types[self.current_token.value]
+
+
 
     def simple_statement(self):
         statement = ""
@@ -276,7 +281,6 @@ class Parser:
                                     if not isinstance(right, (str, int, float)):
                                         right = str(right)
 
-                            print("leftright", left, right)
 
                             if t == "+":
                                 if isinstance(left, (int, float)) and isinstance(
@@ -304,11 +308,11 @@ class Parser:
                                     stack.append(left - right)
 
                             elif t == "/":
-                                if left.isdigit is False or right.isdigit() is False:
+                                if isinstance(left, (int,float)) is False or isinstance(right, (int, float)) is False:
                                     raise Exception(
                                         f"Cannot divide strings or other: {left}-{right}"
                                     )
-                                elif left.isdigit() and right.isdigit():
+                                elif isinstance(left, (int,float)) and isinstance(right, (int, float)):
                                     stack.append(left / right)
                             elif t == "*":
                                 if isinstance(left, str) and isinstance(
@@ -414,15 +418,17 @@ class Parser:
         self.expect("IDENTIFIER")
 
         variable_identifier = self.expression()
+        variable_identifier_value = variable_identifier.value
 
         self.advance()  # skip past TO
 
         variable_value = self.expression()
+        variable_value_value = variable_value.value
 
-        statement = f"{variable_identifier} = {variable_value}\n"
-        self.add_variable(variable_identifier, variable_value)
 
-        variable_value = str(variable_value)
+        statement = f"{variable_identifier_value} = {variable_value_value}\n"
+        self.add_variable(variable_identifier_value, variable_value_value)
+
         exp = VariableAssignment(
             type="VariableAssignment",
             idenitifer=variable_identifier,

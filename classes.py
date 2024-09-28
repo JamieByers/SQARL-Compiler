@@ -25,7 +25,7 @@ class VariableDeclaration(ASTNode):
 @dataclass
 class VariableAssignment(ASTNode):
     idenitifer: Any
-    value: Union[str, int ,float, bool]
+    value: Any
 
 
 @dataclass
