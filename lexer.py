@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 from classes import Token
 
 
@@ -38,7 +38,7 @@ class Tokeniser:
 
         return k
 
-    def skip_token(self) -> str:
+    def skip_token(self) -> None:
         skipping = ""
         while self.current_char.isspace():
             self.advance()
@@ -85,7 +85,7 @@ class Tokeniser:
         return token
 
 
-    def next_token(self) -> Token:
+    def next_token(self):
         while self.current_char is not None and self.current_char.isspace() and self.current_char != "":
             self.advance()
 
@@ -101,21 +101,21 @@ class Tokeniser:
         else:
             self.advance()
 
-    def check_token(self, token: str) -> Token:
+    def check_token(self, token) -> Union[str, Token]:
         if token == "<"  and self.next_char() == "=":
             token = Token("LESS_THAN_OR_EQUAL", token+"=")
-            token = self.tokens.append(token)
+            self.tokens.append(token)
             self.advance(2)
             return token
         elif token == ">" and self.next_char() == "=":
             token = Token("MORE_THAN_OR_EQUAL", token+"=")
-            token = self.tokens.append(token)
+            self.tokens.append(token)
             self.advance(2)
             return token
 
         if token == "=":
             token = Token("COMPARITOR", " == ")
-            token = self.tokens.append(token)
+            self.tokens.append(token)
             self.advance()
             return token
 

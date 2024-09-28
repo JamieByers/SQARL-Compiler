@@ -14,7 +14,7 @@ class Program(ASTNode):
 @dataclass
 class Token:
     type: str
-    value: str
+    value: Union[str, int, float]
 
 @dataclass
 class VariableDeclaration(ASTNode):
@@ -91,3 +91,4 @@ class Parameter:
 @dataclass
 class ArrayElement(ASTNode):
     elements: List[Any]
+    value: str

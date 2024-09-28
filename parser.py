@@ -1,18 +1,20 @@
+from typing import List
 from lexer import Tokeniser
 from classes import *
-from typing import List
+
 
 class Parser:
     def __init__(self, string):
         self.lexer = Tokeniser(string)
         self.lexer.tokenise()
         self.pos = 0
-        self.current_token = self.lexer.tokens[self.pos] if self.lexer.tokens else None
+        self.current_token = (
+            self.lexer.tokens[self.pos] if self.lexer.tokens else Token("", "")
+        )
         self.statements = []
         self.AST_nodes = []
         self.indent_level = 0
         self.variables = {}
-
 
     def advance(self, amount=1) -> None:
         self.pos += amount
@@ -22,20 +24,22 @@ class Parser:
             self.current_token = self.lexer.tokens[self.pos]
 
     def next_token(self):
-        return self.lexer.tokens[self.pos+1]
+        return self.lexer.tokens[self.pos + 1]
 
     def expect(self, expected):
-        if expected == self.lexer.tokens[self.pos+1].type:
+        if expected == self.lexer.tokens[self.pos + 1].type:
             self.advance()
         else:
-            print("ERROR UNEXPECTED TOKEN: ", self.lexer.tokens[self.pos+1], "EXPECTED ", expected)
-
+            print(
+                "ERROR UNEXPECTED TOKEN: ",
+                self.lexer.tokens[self.pos + 1],
+                "EXPECTED ",
+                expected,
+            )
 
     def display(self) -> None:
         for statement in self.statements:
             print(statement)
-
-
 
     def parse(self) -> List:
         while self.pos <= len(self.lexer.tokens) and self.current_token is not None:
@@ -50,32 +54,31 @@ class Parser:
             for statement in self.statements:
                 file.write(statement)
 
-
     def statement(self):
         statement = None
         if self.current_token:
             if self.current_token.type == "VARIABLE_DECLARATION":
-                statement =  self.variable_declaration()
+                statement = self.variable_declaration()
             elif self.current_token.type == "VARIABLE_ASSIGNMENT":
                 statement = self.variable_assignment()
             elif self.current_token.type == "SUBPROGRAM":
-                statement =  self.function_declaration()
+                statement = self.function_declaration()
             elif self.current_token.type == "KEYWORD":
                 if self.current_token.value == "IF":
-                    statement =  self.if_statement()
+                    statement = self.if_statement()
                 if self.current_token.value == "FOR":
-                    statement =  self.for_statement()
+                    statement = self.for_statement()
                 elif self.current_token.value == "WHILE":
-                    statement =  self.while_statement()
+                    statement = self.while_statement()
                 elif self.current_token.value == "SEND":
-                    statement =  self.send_to_display_statement()
+                    statement = self.send_to_display_statement()
                 elif self.current_token.value == "RETURN":
-                    statement =  self.return_statement()
+                    statement = self.return_statement()
             elif self.current_token.type == "KEYWORD_CONTINUED":
-                    if self.current_token.value == "ELSE IF":
-                        statement = self.else_if_statement()
-                    elif self.current_token.value == "ELSE":
-                        statement = self.else_statement()
+                if self.current_token.value == "ELSE IF":
+                    statement = self.else_if_statement()
+                elif self.current_token.value == "ELSE":
+                    statement = self.else_statement()
             elif self.current_token.type == "END":
                 self.advance()
             elif self.current_token.type == "EOF":
@@ -83,18 +86,24 @@ class Parser:
                 self.advance()
                 return None
             else:
-                print("statement failed", self.current_token, self.pos)
+                raise Exception("statement failed", self.current_token, self.pos)
 
         return statement
 
     def simple_statement(self):
         statement = ""
-        while self.current_token.type not in ["KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT", "EOF"]:
+        while self.current_token.type not in [
+            "KEYWORD",
+            "END",
+            "VARIABLE_ASSIGNMENT",
+            "VARIABLE_DECLARATION",
+            "ASSIGNMENT",
+            "EOF",
+        ]:
             statement += str(self.current_token.value)
             self.advance()
 
         return statement
-
 
     def expression(self):
         def check_if_array():
@@ -109,13 +118,16 @@ class Parser:
             return False
 
         def check_if_index_fetch():
-            if self.current_token.type == "IDENTIFIER" and self.next_token().value == "[":
+            if (
+                self.current_token.type == "IDENTIFIER"
+                and self.next_token().value == "["
+            ):
                 return True
 
         def handleFunctionCall():
             # -- TODO -- add standard algorithms
 
-            #missing ord chr random
+            # missing ord chr random
             standard_algorithms = {
                 "length": "len",
             }
@@ -126,7 +138,7 @@ class Parser:
                 function_identifier = standard_algorithms[function_identifier]
 
             self.expect("LPAREN")
-            self.advance() # skip (
+            self.advance()  # skip (
             while self.current_token.type != "RPAREN":
                 if self.current_token.type == "COMMA":
                     self.advance()
@@ -134,17 +146,25 @@ class Parser:
                 function_params.append(self.current_token.value)
                 self.advance()
 
-            self.advance() #skip )
+            self.advance()  # skip )
 
             additional_context = self.simple_statement()
 
-            code = f"{function_identifier}({''.join(function_params)})" + additional_context
-            ast_node = FunctionCall(type="FunctionCall", idenitifer=function_identifier, params=function_params,value=code)
+            code = (
+                f"{function_identifier}({''.join(function_params)})"
+                + additional_context
+            )
+            ast_node = FunctionCall(
+                type="FunctionCall",
+                idenitifer=function_identifier,
+                params=function_params,
+                value=code,
+            )
             ast_node.code = code
             return ast_node
 
         def handleArrayExp():
-            self.advance() #skip past (
+            self.advance()  # skip past (
             array_elements = []
             while self.current_token.value != "]":
                 if self.current_token.type == "COMMA":
@@ -153,10 +173,10 @@ class Parser:
                     array_elements.append(str(self.current_token.value))
                     self.advance()
 
-            self.advance() #skip ]
+            self.advance()  # skip ]
 
-            #f"[{', '.join([str(i) for i in array_elements])}]"
-            el = ArrayElement(type="Array", elements=array_elements)
+            code = f"[{', '.join([str(i) for i in array_elements])}]"
+            el = ArrayElement(type="Array", elements=array_elements, value=code)
             return el
 
         def handleIndexFetch():
@@ -167,7 +187,7 @@ class Parser:
 
             self.expect("LSQPAREN")
             fetch += "["
-            self.advance() #move past [
+            self.advance()  # move past [
 
             index_values = []
             while self.current_token.value != "]":
@@ -175,26 +195,32 @@ class Parser:
                 self.advance()
 
             # -- TODO -- create a small expression function that doesnt advance, or does just simply up until RSQparen, or add to current exp?
-            fetch += "".join(index_values) #TEMPORARY FIX
+            fetch += "".join(index_values)  # TEMPORARY FIX
 
             fetch += "]"
-            self.advance() #move past ]
+            self.advance()  # move past ]
 
             exp = Expression(type="Expression", value=fetch)
             return exp
 
-
-
         def handleArithmaticExpression():
             overall_values = ["+", "-", "/", "*", "(", ")", "*", "^", "MOD"]
             operator_values = ["+", "-", "/", "*", "^", "MOD"]
+
             def initialise_stacks():
                 tokens = []
                 operator_stack = []
                 precedence = {"+": 1, "-": 1, "*": 2, "/": 2, "^": 3, "MOD": 2}
                 output_queue = []
 
-                while self.current_token and self.current_token.type not in ["KEYWORD", "END", "VARIABLE_ASSIGNMENT", "VARIABLE_DECLARATION", "ASSIGNMENT", "EOF"]:
+                while self.current_token and self.current_token.type not in [
+                    "KEYWORD",
+                    "END",
+                    "VARIABLE_ASSIGNMENT",
+                    "VARIABLE_DECLARATION",
+                    "ASSIGNMENT",
+                    "EOF",
+                ]:
                     token = self.current_token.value
                     tokens.append(self.current_token)
                     self.advance()
@@ -204,7 +230,11 @@ class Parser:
 
                     elif token in operator_values:
 
-                        while operator_stack and operator_stack[-1] != "(" and precedence[operator_stack[-1]] >= precedence[token]:
+                        while (
+                            operator_stack
+                            and operator_stack[-1] != "("
+                            and precedence[operator_stack[-1]] >= precedence[token]
+                        ):
                             output_queue.append(operator_stack.pop())
                         operator_stack.append(token)
 
@@ -243,40 +273,60 @@ class Parser:
                                 right = self.variables[right]
                                 if isinstance(right, (Expression)):
                                     right = right.value
-                                    if not isinstance(right,(str, int,float)):
+                                    if not isinstance(right, (str, int, float)):
                                         right = str(right)
 
-                            print("leftright",left, right)
+                            print("leftright", left, right)
 
                             if t == "+":
-                                if isinstance(left, (int,float)) and isinstance(right, (int, float)):
+                                if isinstance(left, (int, float)) and isinstance(
+                                    right, (int, float)
+                                ):
                                     stack.append(left + right)
                                 else:
                                     stack.append(str(left) + str(right))
                             elif t == "-":
-                                if isinstance(left, str) and isinstance(right, (int, float)):
-                                    stack.append(left+"-"+str(right))
-                                elif isinstance(right, str) and isinstance(left, (int, float)):
-                                    stack.append(right+"-"+str(left))
+                                if isinstance(left, str) and isinstance(
+                                    right, (int, float)
+                                ):
+                                    stack.append(left + "-" + str(right))
+                                elif isinstance(right, str) and isinstance(
+                                    left, (int, float)
+                                ):
+                                    stack.append(right + "-" + str(left))
                                 elif isinstance(left, str) and isinstance(right, str):
-                                    raise Exception(f"Cannot subtract two strings: {left}-{right}")
-                                elif isinstance(left, (int,float)) and isinstance(right, (int,float)):
+                                    raise Exception(
+                                        f"Cannot subtract two strings: {left}-{right}"
+                                    )
+                                elif isinstance(left, (int, float)) and isinstance(
+                                    right, (int, float)
+                                ):
                                     stack.append(left - right)
 
                             elif t == "/":
-                                if (left.isdigit == False or right.isdigit() == False):
-                                    raise Exception(f"Cannot divide strings or other: {left}-{right}")
+                                if left.isdigit is False or right.isdigit() is False:
+                                    raise Exception(
+                                        f"Cannot divide strings or other: {left}-{right}"
+                                    )
                                 elif left.isdigit() and right.isdigit():
                                     stack.append(left / right)
                             elif t == "*":
-                                if isinstance(left, str) and isinstance(right, (int, float)):
-                                    stack.append(left * int(right))  # Convert float to int for string multiplication
-                                elif isinstance(right, str) and isinstance(left, (int, float)):
+                                if isinstance(left, str) and isinstance(
+                                    right, (int, float)
+                                ):
+                                    stack.append(
+                                        left * int(right)
+                                    )  # Convert float to int for string multiplication
+                                elif isinstance(right, str) and isinstance(
+                                    left, (int, float)
+                                ):
                                     stack.append(right * int(left))
-                                elif isinstance(left, (int,float)) and isinstance(right, (int,float)):
+                                elif isinstance(left, (int, float)) and isinstance(
+                                    right, (int, float)
+                                ):
                                     stack.append(left * right)
                             elif t == "^":
-                                stack.append(left ** right)
+                                stack.append(left**right)
                             elif t == "MOD":
                                 stack.append(left % right)
 
@@ -287,8 +337,6 @@ class Parser:
             exp = Expression(type="Expression", value=eval)
             # self.AST_nodes.append(Expression(type="Expression", value=eval))
             return exp
-
-
 
         is_array = check_if_array()
         is_function_call = check_if_function_call()
@@ -307,12 +355,12 @@ class Parser:
 
     def send_to_display_statement(self):
         self.advance()  # skip SEND
-        to_print = ""
-        while self.current_token.value != "TO":
+        to_print: str = ""
+        while self.current_token and self.current_token.value != "TO":
             to_print += self.current_token.value
             self.advance()
 
-        self.advance() # skip past DISPLAY
+        self.advance()  # skip past DISPLAY
 
         code = f"print({to_print})"
 
@@ -328,11 +376,11 @@ class Parser:
         expected_type = None
 
         self.expect("IDENTIFIER")
-        if self.current_token.type == 'IDENTIFIER':
+        if self.current_token.type == "IDENTIFIER":
             identifier = self.current_token.value
 
-            self.expect('VARIABLE_DECLARATION')
-            self.advance() # move up to var value
+            self.expect("VARIABLE_DECLARATION")
+            self.advance()  # move up to var value
             if self.current_token.value != "AS":
                 value = self.expression()
                 exact_value = value.value
@@ -350,21 +398,24 @@ class Parser:
             return False
 
         code = f"{identifier} = {exact_value} \n"
-        exp = VariableDeclaration(type="VariableDeclaration", idenitifer=identifier, initial_value = value, var_type=expected_type )
+        exp = VariableDeclaration(
+            type="VariableDeclaration",
+            idenitifer=identifier,
+            initial_value=value,
+            var_type=expected_type,
+        )
         exp.code = code
         self.AST_nodes.append(exp)
         self.add_variable(identifier, exact_value)
 
         return code
 
-
-
     def variable_assignment(self):
         self.expect("IDENTIFIER")
 
         variable_identifier = self.expression()
 
-        self.advance() # skip past TO
+        self.advance()  # skip past TO
 
         variable_value = self.expression()
 
@@ -372,7 +423,11 @@ class Parser:
         self.add_variable(variable_identifier, variable_value)
 
         variable_value = str(variable_value)
-        exp = VariableAssignment(type="VariableAssignment", idenitifer=variable_identifier, value=variable_value, )
+        exp = VariableAssignment(
+            type="VariableAssignment",
+            idenitifer=variable_identifier,
+            value=variable_value,
+        )
         exp.code = statement.strip("\n")
         self.AST_nodes.append(exp)
         return statement
@@ -389,9 +444,8 @@ class Parser:
         return Condition(type="condition", value=condition)
 
     def if_statement(self):
-        self.advance() # move past if towards conidition
+        self.advance()  # move past if towards conidition
         condition = self.condition()
-
 
         code_block = self.parse_block()
 
@@ -406,8 +460,15 @@ class Parser:
         if self.current_token.value == "ELSE":
             else_block = self.else_statement()
 
-
-        self.AST_nodes.append(IfStatement(type="IfStatement", condition=condition, code_block=code_block, else_block=else_block, else_if_block=else_if_block ))
+        self.AST_nodes.append(
+            IfStatement(
+                type="IfStatement",
+                condition=condition,
+                code_block=code_block,
+                else_block=else_block,
+                else_if_block=else_if_block,
+            )
+        )
         return code
 
     def else_if_statement(self):
@@ -435,12 +496,12 @@ class Parser:
         self.advance()
         if self.current_token.type == "IDENTIFIER":
             for_loop_identifier = self.current_token.value
-            self.expect("KEYWORD") # move to FROM
-            self.advance() # move to starting index
+            self.expect("KEYWORD")  # move to FROM
+            self.advance()  # move to starting index
             starting_index = self.current_token.value
 
-            self.expect("ASSIGNMENT") # move to TO
-            self.advance() # move to loop length
+            self.expect("ASSIGNMENT")  # move to TO
+            self.advance()  # move to loop length
             loop_length = self.current_token.value
 
             self.advance()
@@ -450,15 +511,21 @@ class Parser:
                 step_count = self.current_token.value
                 self.expect("BLOCK_START")
 
-
             for_block = self.parse_block()
-
-
 
             code = f"for {for_loop_identifier} in range({starting_index}, {loop_length}): \n"
             code += for_block
 
-            self.AST_nodes.append(ForStatement(type="ForStatement", variable=for_loop_identifier, start=starting_index, end=loop_length, step=step_count, code_block=for_block))
+            self.AST_nodes.append(
+                ForStatement(
+                    type="ForStatement",
+                    variable=for_loop_identifier,
+                    start=starting_index,
+                    end=loop_length,
+                    step=step_count,
+                    code_block=for_block,
+                )
+            )
             return code
 
         elif self.current_token.type == "KEYWORD":
@@ -469,22 +536,26 @@ class Parser:
             looping_from = self.current_token.value
             self.expect("BLOCK_START")
 
-
             for_code = self.parse_block()
-
 
             code = f"for {for_loop_identifier} in {looping_from}: \n"
             code += for_code
 
-            self.AST_nodes.append(ForEachStatement(type="ForEachStatement", variable=for_loop_identifier, loop_from=looping_from, code_block=for_code))
+            self.AST_nodes.append(
+                ForEachStatement(
+                    type="ForEachStatement",
+                    variable=for_loop_identifier,
+                    loop_from=looping_from,
+                    code_block=for_code,
+                )
+            )
             return code
 
         else:
             print("Error with for loop")
 
-
     def while_statement(self):
-        self.advance() # skip past while
+        self.advance()  # skip past while
         condition = self.condition()
 
         code_block = self.parse_block()
@@ -492,14 +563,17 @@ class Parser:
         code = f"while {condition}:\n"
         code += code_block
 
-        self.AST_nodes.append(WhileStatement(type="WhileStatement", condition=condition, code_block=code_block))
+        self.AST_nodes.append(
+            WhileStatement(
+                type="WhileStatement", condition=condition, code_block=code_block
+            )
+        )
         return code
-
 
     def parse_block(self, skip_then=True):
         self.indent_level += 1
         if skip_then:
-            self.advance() # skip past THEN
+            self.advance()  # skip past THEN
 
         block_statements = []
         while self.current_token.type not in ["END", "KEYWORD_CONTINUED", "EOF"]:
@@ -516,13 +590,13 @@ class Parser:
             code += code_line
 
         if self.current_token.type == "END":
-            self.advance() # end block
+            self.advance()  # end block
 
         self.indent_level -= 1
         return code
 
     def get_indent_level(self):
-        return "    "*self.indent_level
+        return "    " * self.indent_level
 
     def get_params(self):
 
@@ -543,11 +617,11 @@ class Parser:
             return False
 
         self.expect("LPAREN")
-        self.advance() #skip (
+        self.advance()  # skip (
         params = []
         while self.current_token.type != "RPAREN":
             if self.current_token.type == "TYPE":
-                param = Parameter()
+                param = Parameter(value="", type="")
                 if checktype(self.current_token.value):
                     param.type = self.current_token.value
                     self.expect("IDENTIFIER")
@@ -555,14 +629,16 @@ class Parser:
                     params.append(param)
                     self.advance()
                 else:
-                    raise Exception("TYPE EXPECTED FOR PARAM. ERROR AT TOKEN "+self.current_token)
+                    raise Exception(
+                        "TYPE EXPECTED FOR PARAM. ERROR AT TOKEN " + self.current_token
+                    )
             elif self.current_token.type == "COMMA":
                 self.advance()
 
         return params
 
     def return_statement(self):
-        self.advance() # skip RETURN
+        self.advance()  # skip RETURN
         returning = self.expression()
 
         code = f"return {returning}"
@@ -581,19 +657,16 @@ class Parser:
             "REAL": "float",
             "BOOLEAN": "bool",
             "ARRAY": "LIST",
-
         }
 
         expecting_type = False
         type_expected = None
         next_token = self.next_token()
         if next_token.value == "RETURNS":
-            self.advance() # move past RETURNS
+            self.advance()  # move past RETURNS
             expecting_type = True
             self.expect("TYPE")
             type_expected = self.current_token.value
-
-
 
         code_block = self.parse_block()
         param_identifiers = [param.value for param in params]
@@ -610,14 +683,15 @@ class Parser:
         else:
             code += ":\n"
 
-
         code += code_block
 
-        self.AST_nodes.append(FunctionDeclaration(type="FunctionDeclaration", name=function_identifier, params=params, code_block=code_block, return_type=type_expected))
+        self.AST_nodes.append(
+            FunctionDeclaration(
+                type="FunctionDeclaration",
+                name=function_identifier,
+                params=params,
+                code_block=code_block,
+                return_type=type_expected,
+            )
+        )
         return code
-
-
-
-
-
-
