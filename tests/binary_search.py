@@ -23,7 +23,6 @@ END WHILE
 Test(
     test,
     test_name = "Binary Search",
-    test_type = "parser",
-    print_tokens = False,
+    test_type = "code generator",
 
 ).run(show_error_message=True)

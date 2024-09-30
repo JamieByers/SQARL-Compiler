@@ -1,13 +1,20 @@
-from parser import Parser
+from tests.general_test import Test
 
-p = Parser("""
+t = """
 
-                DECLARE condition INITIALLY true
-                WHILE (condition = TRUE) AND (condition = TRUE) DO
-                    SET condition TO false
-                END WHILE
+    DECLARE con INITIALLY 12
+    WHILE con <= 12 DO
+        SEND con TO DISPLAY
+    END WHILE
 
-           """)
+"""
 
-p.parse()
+test = Test(
+        t,
+        test_name="while parsing",
+        test_type="code generator",
+        print_tokens=False,
+        print_ASTNodes=False,
+)
+test.run()
 

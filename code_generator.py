@@ -6,55 +6,145 @@ class CodeGenerator:
         self.pos = 0
         self.current_node = self.ast[self.pos] if self.ast else None
         self.statements = []
+        self.indent_level = 1
 
-    def advance(self):
+    def advance(self) -> None:
         self.pos += 1
-        if self.pos <= len(self.ast):
+        if self.pos <= len(self.ast)-1:
+            print(self.pos, len(self.ast)-1)
             self.current_node = self.ast[self.pos]
         else:
             self.current_node = None
 
     def generate(self):
         while self.current_node:
-            node_type = self.match_node()
+            statement = self.match_node(self.current_node)
+            self.statements.append(statement)
+            self.advance()
 
+        return self.statements
 
-    def match_node(self):
-        if self.current_node.type:
-            node_types = {
-                "VariableDeclaration": self.add_statement,
-                "VariableAssignment": self.statement
+    def display(self):
+        print()
+        for statement in self.statements:
+            print(statement)
 
+    def write(self):
+        with open("output.py", "w+") as file:
+            for statement in self.statements:
+                file.write(statement)
 
-            }
-        else:
-            raise Exception("Current node has not type: ", self.current_node)
+    def get_indent_level(self):
+        return "    "*self.indent_level
 
-    def add_statement(self):
-        self.statements.append(self.current_node.code)
-
-    def DisplayNode(self):
-        return f"print({self.current_node.value})"
-
-    def VariableDeclarationNode(self):
-        return f"{self.current_node.identifier} = {self.current_node.initial_value}"
-
-    def VariableAssignmentNode(self):
-        return f"{self.current_node.identifier} = {self.current_node.value}"
-
-    def IfStatementNode(self):
+    def parsed_block(self, block):
         code = ""
+        self.indent_level += 1
 
-        if_line = f"if {self.current_node.condition}:\n"
-        code += if_line
-        code += self.current_node.code_block
+        for statement in block:
+            statement: str = self.get_indent_level() + self.match_node(statement)
+            if "\n" not in statement:
+                statement += "\n"
 
-        if self.current_node.else_if_block:
-           code += self.current_node.else_if_block
-        if self.current_node.else_block:
-            code += self.current_node.else_block
+            code += statement
+
+        self.indent_level -= 1
 
         return code
 
-    def ForStatementNode(self):
-        pass
+    def match_node(self, node) -> str:
+        if node is None:
+            node = self.current_node
+
+
+        if node.type:
+            node_types = {
+                "VariableDeclaration": self.VariableDeclarationNode,
+                "VariableAssignment": self.VariableAssignmentNode,
+                "DisplayStatement": self.DisplayNode,
+                "IfStatement": self.IfStatementNode,
+                "ForStatement": self.ForStatementNode,
+                "ForEachStatement": self.ForEachStatementNode,
+                "WhileStatement": self.WhileStatementNode,
+                "FunctionDeclaration": self.FunctionDeclarationNode,
+                "ReturnStatement": self.ReturnStatementNode,
+            }
+            return node_types[node.type](node)
+        else:
+            raise Exception("Current node has not type: ", self.current_node)
+
+    def DisplayNode(self, node) -> str:
+        return f"print({node.value})"
+
+    def VariableDeclarationNode(self, node) -> str:
+        return f"{node.identifier.value} = {node.initial_value.value}"
+
+    def VariableAssignmentNode(self, node) -> str:
+        return f"{node.identifier.value} = {node.value.value}"
+
+    def IfStatementNode(self, node) -> str:
+        code: str = ""
+
+        if_line = f"if {node.condition.value}:\n"
+        code += if_line
+        code += self.parsed_block(node.code_block)
+
+        if node.else_if_block:
+            else_if_line = f"elif {node.else_if_block.condition.value}:\n"
+            code += else_if_line
+            elif_block = self.parsed_block(node.else_if_block.code_block)
+            code += elif_block
+        if node.else_block:
+            code += "else: \n"
+            else_block = self.parsed_block(node.else_block.code_block)
+            code += else_block
+
+        return code
+
+    def ForStatementNode(self, node) -> str:
+        code: str = ""
+
+        for_line = f"for {node.variable} in range({node.start}, {node.step}, {node.end}): \n"
+        code += for_line
+
+        code_block = self.parsed_block(node.code_block)
+        code += code_block
+
+        return code
+
+    def ForEachStatementNode(self, node) -> str:
+        code: str = ""
+
+        for_line = f"for {node.variable} in {node.loop_from}: \n"
+        code += for_line
+
+        code_block = self.parsed_block(node.code_block)
+        code += code_block
+
+        return code
+
+    def WhileStatementNode(self, node) -> str:
+        code: str = ""
+
+        while_line = f"while {node.condition.value}: \n"
+        code += while_line
+
+        code_block = self.parsed_block(node.code_block)
+        code += code_block
+
+        return code
+
+    def FunctionDeclarationNode(self, node) -> str:
+        code: str = ""
+
+        parameters = [f"{param.value}: {param.type}" for param in node.params]
+        funcdec: str = f"def {node.name}({', '.join(parameters)}):\n"
+        code += funcdec
+
+        code_block = self.parsed_block(node.code_block)
+        code += code_block
+
+        return code
+
+    def ReturnStatementNode(self, node) -> str:
+        return f"return {str(node.value.value)}"

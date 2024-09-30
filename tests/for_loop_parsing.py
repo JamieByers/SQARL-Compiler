@@ -10,9 +10,9 @@ for test in tests:
 
     test,
     test_name= " ".join(test.split(" ")[0:3]),
-    test_type="parser",
+    test_type="code generator",
     print_tokens=False,
-
+    print_ASTNodes=False
     )
 
     tst.run(show_error_message=True)

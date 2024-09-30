@@ -4,8 +4,6 @@ from dataclasses import dataclass
 @dataclass
 class ASTNode:
     type: str
-    code: str
-
 
 @dataclass
 class Program(ASTNode):
@@ -18,13 +16,13 @@ class Token:
 
 @dataclass
 class VariableDeclaration(ASTNode):
-    idenitifer: Any
+    identifier: Any
     initial_value: Any
     var_type: Optional[Union[str,type]]
 
 @dataclass
 class VariableAssignment(ASTNode):
-    idenitifer: Any
+    identifier: Any
     value: Any
 
 @dataclass
@@ -37,6 +35,7 @@ class FunctionDeclaration(ASTNode):
     params : List[str]
     code_block: Union[List[ASTNode], str]
     return_type: Optional[str]
+    returning_type: Any
 
 @dataclass
 class FunctionCall(ASTNode):
@@ -61,7 +60,7 @@ class ForStatement(ASTNode):
     variable: str
     start: str
     end: str
-    step: Optional[Union[int, "Expression"]]
+    step: int
     code_block: Union[List[ASTNode], str]
 
 @dataclass
@@ -95,3 +94,12 @@ class Parameter:
 class ArrayElement(ASTNode):
     elements: List[Any]
     value: str
+
+@dataclass
+class ElifElement(ASTNode):
+    condition: Union[str, Condition]
+    code_block: List[ASTNode]
+
+@dataclass
+class ElseElement(ASTNode):
+    code_block: List[ASTNode]

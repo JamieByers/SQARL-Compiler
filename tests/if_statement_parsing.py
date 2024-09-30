@@ -1,12 +1,24 @@
-from parser import Parser
+from tests.general_test import Test
 
-p = Parser("""
-
+test = """
                 IF condition = true THEN
-                    SEND "Hello World!" TO DISPlAY
+                    DECLARE hello INITIALLY "hello"
+                    SET hello TO "hello world!"
+                    SEND hello TO DISPlAY
+                ELSE IF conition = false THEN
+                    SEND "what?" TO DISPLAY
+                ELSE
+                    SEND "NO WAY" TO DISPLAY
                 END IF
+"""
 
-           """)
+t = Test(
+        test,
+        test_name="if statement parsing",
+        test_type="code generator",
+        print_tokens=False,
+        print_ASTNodes=False,
+)
 
-p.parse()
-p.write()
+t.run(display=True, show_error_message=True, write=True)
+

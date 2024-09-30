@@ -49,7 +49,7 @@ class Tokeniser:
 
     def tokenise_normal(self) -> str:
         s = ""
-        while self.current_char is not None and not self.current_char.isspace() and self.current_char not in ["(", ")", "[", "]", "{", "}"]:
+        while self.current_char is not None and not self.current_char.isspace() and self.current_char not in ["(", ")", "[", "]", "{", "}", ","]:
             s += self.current_char
             self.advance()
 
@@ -143,7 +143,9 @@ class Tokeniser:
             "SEND": "KEYWORD",
             "TO": "ASSIGNMENT",
             "DISPLAY": "KEYWORD",
+            "true": "BOOLEAN",
             "TRUE": "BOOLEAN",
+            "false": "BOOLEAN",
             "FALSE": "BOOLEAN",
             ">": "GREATER_THAN",
             "<": "LESS_THAN",
@@ -181,7 +183,7 @@ class Tokeniser:
         }
 
         if token in token_types_matched.keys():
-            if token in ["TRUE", "FALSE"]:
+            if token in ["TRUE", "FALSE", "true", "false"]:
                 t = Token("BOOLEAN", token.lower().capitalize())
 
                 self.tokens.append(t)
@@ -200,7 +202,7 @@ class Tokeniser:
                     t = Token(type= "END", value= "END FUNCTION")
                 elif next == "FOR":
                     t = Token(type= "END", value= "END FOR")
-                    # self.advance()
+                    self.advance()
                     next = self.tokenise_key()
                     if next == "EACH":
                         t = Token(type= "END", value= "END FOR EACH")

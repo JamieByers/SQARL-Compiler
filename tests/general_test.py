@@ -1,8 +1,14 @@
+
+
+from code_generator import CodeGenerator
+
+
 class Test:
 
     def __init__(self, string, test_type, test_name, print_tokens=False, print_ASTNodes=False):
         from lexer import Tokeniser
         from parser import Parser
+        from code_generator import CodeGenerator
         self.string = string
         self.test_type = test_type
         self.passed = False
@@ -11,29 +17,28 @@ class Test:
         self.test_name = test_name
         self.tokeniser = Tokeniser(self.string)
         self.parser = Parser(self.string)
+        self.code_generator = None
 
-    def run(self, write=False, show_error_message=False, write_ast=False):
+    def run(self, display=True, write=False, show_error_message=False, write_ast=False):
         print("test -\n", self.string)
         try:
-            if self.test_type == "tokeniser":
-                    self.tokeniser.tokenise()
-                    if self.print_tokens:
-                        print("TOKENS: ", self.tokeniser.tokens)
+            self.tokeniser.tokenise()
+            if self.print_tokens:
+                print("TOKENS: ", self.tokeniser.tokens)
 
-                    self.passed = True
-            elif self.test_type == "parser":
+            if self.test_type == "parser":
 
                     if self.print_tokens:
                         print(self.parser.lexer.tokens)
 
                     self.parser.parse()
-                    self.parser.display()
+
+                    if display:
+                        self.parser.display()
 
                     if self.print_ASTNodes:
                         print(self.parser.AST_nodes)
 
-                    if write == True:
-                        self.parser.write()
                     if write_ast == True:
                         tokens = self.parser.AST_nodes
                         with open("AST Nodes.py", "w") as file:
@@ -41,6 +46,19 @@ class Test:
                                 file.write(str(token)+"\n")
 
                     self.passed = True
+            elif self.test_type == "code generator":
+                self.parser.parse()
+                self.code_generator = CodeGenerator(ast=self.parser.statements)
+                self.code_generator.generate()
+
+                if display:
+                    self.code_generator.display()
+
+                if write:
+                    self.code_generator.write()
+
+                self.passed = True
+
 
         except Exception as e:
             import traceback

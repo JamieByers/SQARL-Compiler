@@ -1,5 +1,4 @@
 from typing import List
-import code_generator
 from lexer import Tokeniser
 from classes import *
 
@@ -48,12 +47,9 @@ class Parser:
             if statement:
                 self.statements.append(statement)
 
+        print(self.statements)
         return self.statements
 
-    def write(self) -> None:
-        with open("output_file.py", "w+") as file:
-            for statement in self.statements:
-                file.write(statement)
 
     def statement(self):
         statement_types = {
@@ -84,7 +80,10 @@ class Parser:
             "RETURN": self.return_statement,
         }
 
-        return keyword_types[self.current_token.value]()
+        if self.current_token.value in keyword_types:
+            return keyword_types[self.current_token.value]()
+        else:
+            raise Exception(KeyError, f"Keyword token does not match keyword types: {self.current_token}")
 
     def keyword_continued(self):
         keyword_cont_types = {
@@ -162,9 +161,7 @@ class Parser:
                 idenitifer=function_identifier,
                 params=function_params,
                 value=code,
-                code=code
             )
-            ast_node.code = code
             return ast_node
 
         def handleArrayExp():
@@ -204,7 +201,7 @@ class Parser:
             fetch += "]"
             self.advance()  # move past ]
 
-            exp = Expression(type="Expression", value=fetch, code=fetch)
+            exp = Expression(type="Expression", value=fetch, )
             return exp
 
         def handleArithmaticExpression():
@@ -341,7 +338,7 @@ class Parser:
 
             output_queue = initialise_stacks()
             eval = evaluate_stacks(output_queue)
-            exp = Expression(type="Expression", value=eval, code=str(eval))
+            exp = Expression(type="Expression", value=eval, )
             # self.AST_nodes.append(Expression(type="Expression", value=eval))
             return exp
 
@@ -369,10 +366,9 @@ class Parser:
 
         self.advance()  # skip past DISPLAY
 
-        code = f"print({to_print})"
 
         self.advance()
-        exp = DisplayStatement(type="DisplayStatement", value=to_print, code=code)
+        exp = DisplayStatement(type="DisplayStatement", value=to_print, )
         return exp
 
     def add_variable(self, identifier, value):
@@ -385,39 +381,33 @@ class Parser:
 
         self.expect("IDENTIFIER")
         if self.current_token.type == "IDENTIFIER":
-            identifier = self.current_token.value
+            identifier = self.expression()
 
             self.expect("VARIABLE_DECLARATION")
             self.advance()  # move up to var value
             if self.current_token.value != "AS":
                 value = self.expression()
-                exact_value = value.value
             else:
                 self.expect("TYPE")
                 if self.current_token.type == "TYPE":
                     expected_type = self.current_token.value
                     self.advance()
                     value = self.expression()
-                    exact_value = value.value
                 else:
                     raise Exception("Expected a type definition")
         else:
             print("EXPECTED IDENTIFIER")
             return False
 
-        code = f"{identifier} = {exact_value} \n"
         exp = VariableDeclaration(
             type="VariableDeclaration",
-            idenitifer=identifier,
+            identifier=identifier,
             initial_value=value,
             var_type=expected_type,
-            code=code
         )
-        exp.code = code
-        self.AST_nodes.append(exp)
-        self.add_variable(identifier, exact_value)
+        self.add_variable(identifier.value, value.value)
 
-        return code
+        return exp
 
     def variable_assignment(self):
         self.expect("IDENTIFIER")
@@ -435,13 +425,11 @@ class Parser:
 
         exp = VariableAssignment(
             type="VariableAssignment",
-            idenitifer=variable_identifier,
+            identifier=variable_identifier,
             value=variable_value,
-            code=statement
         )
-        exp.code = statement.strip("\n")
         self.AST_nodes.append(exp)
-        return statement
+        return exp
 
     def condition(self):
         condition = ""
@@ -452,7 +440,7 @@ class Parser:
             condition += c
             self.advance()
 
-        return Condition(type="condition", value=condition, code=condition)
+        return Condition(type="condition", value=condition)
 
     def if_statement(self):
         self.advance()  # move past if towards conidition
@@ -460,28 +448,26 @@ class Parser:
 
         code_block = self.parse_block()
 
-        code = f"if {condition}:\n"
-        code += code_block
+        # code = f"if {condition}:\n"
+        # code += code_block
 
-        else_if_block = ""
-        else_block = ""
+        else_if_block = None
+        else_block = None
 
         if self.current_token.value == "ELSE IF":
             else_if_block = self.else_if_statement()
         if self.current_token.value == "ELSE":
             else_block = self.else_statement()
 
-        self.AST_nodes.append(
-            IfStatement(
+        el = IfStatement(
                 type="IfStatement",
                 condition=condition,
                 code_block=code_block,
                 else_block=else_block,
                 else_if_block=else_if_block,
-                code=code
             )
-        )
-        return code
+
+        return el
 
     def else_if_statement(self):
         self.advance()
@@ -489,20 +475,23 @@ class Parser:
 
         code_block = self.parse_block()
 
-        code = f"elif {condition}:\n"
-        code += code_block
+        # code = f"elif {condition}:\n"
+        # code += code_block
 
-        return code
+        el = ElifElement(type="ElifElement", condition=condition, code_block=code_block)
+
+        return el
 
     def else_statement(self):
         self.advance()
 
         code_block = self.parse_block(skip_then=False)
 
-        code = "else: \n"
-        code += code_block
+        # code = "else: \n"
+        # code += code_block
 
-        return code
+        el = ElseElement(type="ElseElement", code_block=code_block)
+        return el
 
     def for_statement(self):
         self.advance()
@@ -517,7 +506,7 @@ class Parser:
             loop_length = self.current_token.value
 
             self.advance()
-            step_count = 1
+            step_count: int = 1
             if self.current_token.value == "STEP":
                 self.advance()
                 step_count = self.current_token.value
@@ -525,23 +514,18 @@ class Parser:
 
             for_block = self.parse_block()
 
-            code = f"for {for_loop_identifier} in range({starting_index}, {loop_length}): \n"
-            code += for_block
-
-            self.AST_nodes.append(
-                ForStatement(
+            el = ForStatement(
                     type="ForStatement",
                     variable=for_loop_identifier,
                     start=starting_index,
                     end=loop_length,
                     step=step_count,
                     code_block=for_block,
-                    code=code
                 )
-            )
-            return code
 
-        elif self.current_token.type == "KEYWORD":
+            return el
+
+        elif self.current_token.value == "EACH":
             self.expect("IDENTIFIER")
             for_loop_identifier = self.current_token.value
             self.expect("KEYWORD")
@@ -551,19 +535,14 @@ class Parser:
 
             for_code = self.parse_block()
 
-            code = f"for {for_loop_identifier} in {looping_from}: \n"
-            code += for_code
-
-            self.AST_nodes.append(
-                ForEachStatement(
+            el = ForEachStatement(
                     type="ForEachStatement",
                     variable=for_loop_identifier,
                     loop_from=looping_from,
                     code_block=for_code,
-                    code=code
                 )
-            )
-            return code
+
+            return el
 
         else:
             print("Error with for loop")
@@ -574,15 +553,11 @@ class Parser:
 
         code_block = self.parse_block()
 
-        code = f"while {condition}:\n"
-        code += code_block
 
-        self.AST_nodes.append(
-            WhileStatement(
-                type="WhileStatement", condition=condition, code_block=code_block, code=code
+        el = WhileStatement(
+                type="WhileStatement", condition=condition, code_block=code_block,
             )
-        )
-        return code
+        return el
 
     def parse_block(self, skip_then=True):
         self.indent_level += 1
@@ -594,20 +569,12 @@ class Parser:
             statement = self.statement()
             block_statements.append(statement)
 
-        code = ""
-        for statement in block_statements:
-            if "\n" not in statement:
-                code_line = self.get_indent_level() + statement + "\n"
-            else:
-                code_line = self.get_indent_level() + statement
-
-            code += code_line
 
         if self.current_token.type == "END":
             self.advance()  # end block
 
         self.indent_level -= 1
-        return code
+        return block_statements
 
     def get_indent_level(self):
         return "    " * self.indent_level
@@ -621,14 +588,24 @@ class Parser:
                 "INTEGER",
                 "REAL",
                 "ARRAY",
-                "OBJECT",
-                "CLASS",
-                "FUNCTION",
             ]
 
             if val in types:
                 return True
             return False
+
+        def translate_type(t):
+            type_translator = {
+                "CHAR": "str",
+                "STRING": "str",
+                "INTEGER": "int",
+                "REAL": "float",
+                "ARRAY": "list",
+            }
+            if t in type_translator:
+                return type_translator[t]
+            else:
+                raise Exception(TypeError, f"parameter type does not exist: {t}")
 
         self.expect("LPAREN")
         self.advance()  # skip (
@@ -637,7 +614,7 @@ class Parser:
             if self.current_token.type == "TYPE":
                 param = Parameter(value="", type="")
                 if checktype(self.current_token.value):
-                    param.type = self.current_token.value
+                    param.type = translate_type(self.current_token.value)
                     self.expect("IDENTIFIER")
                     param.value = self.current_token.value
                     params.append(param)
@@ -655,9 +632,9 @@ class Parser:
         self.advance()  # skip RETURN
         returning = self.expression()
 
-        code = f"return {returning}"
+        el = ReturnStatement(type="ReturnStatement", value=returning)
 
-        return code
+        return el
 
     def function_declaration(self):
         self.expect("IDENTIFIER")
@@ -671,39 +648,23 @@ class Parser:
             "BOOLEAN": "bool",
             "ARRAY": "LIST",
         }
-        expecting_type = False
         type_expected = None
         next_token = self.next_token()
         if next_token.value == "RETURNS":
             self.advance()  # move past RETURNS
-            expecting_type = True
             self.expect("TYPE")
             type_expected = self.current_token.value
+            type_expected = type_translation[self.current_token.value]
 
         code_block = self.parse_block()
-        param_identifiers = [param.value for param in params]
 
-        if len(param_identifiers) > 0:
-            code = f"def {function_identifier}({' '.join(param_identifiers)})"
-        elif len(param_identifiers) == 1:
-            code = f"def {function_identifier}({param_identifiers[0]})"
-        else:
-            code = f"def {function_identifier}()"
-
-        if expecting_type and type_expected:
-            code += f" -> {type_translation[type_expected]}: \n"
-        else:
-            code += ":\n"
-        code += code_block
-
-        self.AST_nodes.append(
-            FunctionDeclaration(
+        el = FunctionDeclaration(
                 type="FunctionDeclaration",
                 name=function_identifier,
                 params=params,
                 code_block=code_block,
                 return_type=type_expected,
-                code=code
+                returning_type=type_expected
             )
-        )
-        return code
+
+        return el
