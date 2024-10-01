@@ -4,7 +4,6 @@ test = """
 
     DECLARE func INITIALLY length(param1, param2)
 
-
     """
 
 Test(

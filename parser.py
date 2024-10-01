@@ -129,15 +129,25 @@ class Parser:
         def handleFunctionCall():
             # -- TODO -- add standard algorithms
 
-            # missing ord chr random
-            standard_algorithms = {
-                "length": "len",
-            }
+            def handleStandardAlgorithm(identifier, params):
+                # missing ord chr random
+                standard_algorithms = {
+                    "length": "len",
+                }
+                
+                if identifier in standard_algorithms:
+                    identifier = standard_algorithms[identifier]
+                else: 
+                    return None    
+
+                if identifier == "len" and len(params) == 1:
+                    return len("".join(params))
+
 
             function_params: List[str] = []
             function_identifier = self.current_token.value
-            if function_identifier in standard_algorithms.keys():
-                function_identifier = standard_algorithms[function_identifier]
+
+
 
             self.expect("LPAREN")
             self.advance()  # skip (
@@ -149,6 +159,8 @@ class Parser:
                 self.advance()
 
             self.advance()  # skip )
+
+            value = handleStandardAlgorithm(function_identifier, function_params)
 
             additional_context = self.simple_statement()
 
@@ -347,15 +359,15 @@ class Parser:
         is_array_fetch = check_if_index_fetch()
 
         if is_array:
-            code = handleArrayExp()
+            el = handleArrayExp()
         elif is_function_call:
-            code = handleFunctionCall()
+            el = handleFunctionCall()
         elif is_array_fetch:
-            code = handleIndexFetch()
+            el = handleIndexFetch()
         else:
-            code = handleArithmaticExpression()
+            el = handleArithmaticExpression()
 
-        return code
+        return el
 
     def send_to_display_statement(self):
         self.advance()  # skip SEND
@@ -448,8 +460,7 @@ class Parser:
 
         code_block = self.parse_block()
 
-        # code = f"if {condition}:\n"
-        # code += code_block
+
 
         else_if_block = None
         else_block = None
@@ -475,9 +486,6 @@ class Parser:
 
         code_block = self.parse_block()
 
-        # code = f"elif {condition}:\n"
-        # code += code_block
-
         el = ElifElement(type="ElifElement", condition=condition, code_block=code_block)
 
         return el
@@ -487,8 +495,6 @@ class Parser:
 
         code_block = self.parse_block(skip_then=False)
 
-        # code = "else: \n"
-        # code += code_block
 
         el = ElseElement(type="ElseElement", code_block=code_block)
         return el
