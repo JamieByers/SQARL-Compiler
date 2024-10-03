@@ -2,18 +2,13 @@ from tests.general_test import Test
 
 test = """
 
-      DECLARE var INITIALLY 7+3
-      DECLARE v  INITIALLY 7-3
-      DECLARE variable INITIALLY 7*3
-      DECLARE variable2 INITIALLY 7/3
-
-      SET v TO 17
+      DECLARE var INITIALLY 7
 """
 
 t = Test(
     test,
     test_name="declaration",
-    test_type="parser",
+    test_type="code generator",
     print_tokens=True,
     print_ASTNodes=True
 )

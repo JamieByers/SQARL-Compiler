@@ -1,14 +1,10 @@
-
-
 from code_generator import CodeGenerator
-
 
 class Test:
 
     def __init__(self, string, test_type, test_name, print_tokens=False, print_ASTNodes=False):
         from lexer import Tokeniser
         from parser import Parser
-        from code_generator import CodeGenerator
         self.string = string
         self.test_type = test_type
         self.passed = False

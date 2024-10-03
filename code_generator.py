@@ -26,6 +26,7 @@ class CodeGenerator:
 
     def display(self):
         print()
+        print("Generated Code: ")
         for statement in self.statements:
             print(statement)
 
@@ -76,11 +77,24 @@ class CodeGenerator:
     def DisplayNode(self, node) -> str:
         return f"print({node.value})"
 
+    def variable_values(self, identifier, value):
+        if not isinstance(identifier, (str, int, float, bool)):
+            identifier = self.match_node(identifier)
+
+        if not isinstance(value, (str, int, float, bool)):
+            value = self.match_node(value) 
+
+        return identifier, value
+
     def VariableDeclarationNode(self, node) -> str:
-        return f"{node.identifier.value} = {node.initial_value.value}"
+        identifier, value = self.variable_values(node.identifier, node.value)
+
+        return f"{identifier} = {value}"
 
     def VariableAssignmentNode(self, node) -> str:
-        return f"{node.identifier.value} = {node.value.value}"
+        identifier, value = self.variable_values(self.identifier, self.value)
+
+        return f"{identifier} = {value}"
 
     def IfStatementNode(self, node) -> str:
         code: str = ""

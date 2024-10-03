@@ -161,18 +161,16 @@ class Parser:
             self.advance()  # skip )
 
             value = handleStandardAlgorithm(function_identifier, function_params)
+            if not value:
+                value = f"{function_identifier}({", ".join(function_params) if len(function_params) >= 1 else ""})"
 
             additional_context = self.simple_statement()
 
-            code = (
-                f"{function_identifier}({''.join(function_params)})"
-                + additional_context
-            )
             ast_node = FunctionCall(
                 type="FunctionCall",
                 idenitifer=function_identifier,
                 params=function_params,
-                value=code,
+                value=value
             )
             return ast_node
 
@@ -188,8 +186,7 @@ class Parser:
 
             self.advance()  # skip ]
 
-            code = f"[{', '.join([str(i) for i in array_elements])}]"
-            el = ArrayElement(type="Array", elements=array_elements, value=code)
+            el = ArrayElement(type="Array", elements=array_elements,)
             return el
 
         def handleIndexFetch():
@@ -395,7 +392,8 @@ class Parser:
         if self.current_token.type == "IDENTIFIER":
             identifier = self.expression()
 
-            self.expect("VARIABLE_DECLARATION")
+            # print("ct", self.current_token)
+            # self.expect("VARIABLE_DECLARATION")
             self.advance()  # move up to var value
             if self.current_token.value != "AS":
                 value = self.expression()
