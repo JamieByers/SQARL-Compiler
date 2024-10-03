@@ -134,14 +134,16 @@ class Parser:
                 standard_algorithms = {
                     "length": "len",
                 }
-                
+
                 if identifier in standard_algorithms:
                     identifier = standard_algorithms[identifier]
-                else: 
-                    return None    
+                else:
+                    return None
 
                 if identifier == "len" and len(params) == 1:
-                    return len("".join(params))
+                    return len(params[0])
+
+                return
 
 
             function_params: List[str] = []
@@ -161,14 +163,13 @@ class Parser:
             self.advance()  # skip )
 
             value = handleStandardAlgorithm(function_identifier, function_params)
-            if not value:
-                value = f"{function_identifier}({", ".join(function_params) if len(function_params) >= 1 else ""})"
-
-            additional_context = self.simple_statement()
+            if value is None:
+                value = f"{function_identifier}({', '.join(function_params) if function_params else ''})"
+                additional_context = self.simple_statement()
 
             ast_node = FunctionCall(
                 type="FunctionCall",
-                idenitifer=function_identifier,
+                identifier=function_identifier,
                 params=function_params,
                 value=value
             )

@@ -47,6 +47,9 @@ class Test:
                 self.code_generator = CodeGenerator(ast=self.parser.statements)
                 self.code_generator.generate()
 
+                if self.print_tokens:
+                    print(self.parser.lexer.tokens)
+
                 if display:
                     self.code_generator.display()
 

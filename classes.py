@@ -39,7 +39,7 @@ class FunctionDeclaration(ASTNode):
 
 @dataclass
 class FunctionCall(ASTNode):
-    idenitifer: str
+    identifier: str
     params: Union[str, int, float, bool, ASTNode, List[str]]
     value: Any
 

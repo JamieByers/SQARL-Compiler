@@ -1,6 +1,6 @@
 [x] - change all functions to return AST node
 [ ] - add more standard algorithms
 [ ] - fix function call
-[ ] -
+[ ] - add array of type
 [ ] -
 [ ] -

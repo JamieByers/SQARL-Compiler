@@ -68,7 +68,9 @@ class CodeGenerator:
                 "ForEachStatement": self.ForEachStatementNode,
                 "WhileStatement": self.WhileStatementNode,
                 "FunctionDeclaration": self.FunctionDeclarationNode,
+                "FunctionCall": self.FunctionCallNode,
                 "ReturnStatement": self.ReturnStatementNode,
+                "Expression": self.ExpressionNode,
             }
             return node_types[node.type](node)
         else:
@@ -82,12 +84,12 @@ class CodeGenerator:
             identifier = self.match_node(identifier)
 
         if not isinstance(value, (str, int, float, bool)):
-            value = self.match_node(value) 
+            value = self.match_node(value)
 
         return identifier, value
 
     def VariableDeclarationNode(self, node) -> str:
-        identifier, value = self.variable_values(node.identifier, node.value)
+        identifier, value = self.variable_values(node.identifier, node.initial_value)
 
         return f"{identifier} = {value}"
 
@@ -160,5 +162,12 @@ class CodeGenerator:
 
         return code
 
+    def FunctionCallNode(self, node):
+        return f"{node.identifier}({', '.join(node.params) if node.params else ''})"
+
     def ReturnStatementNode(self, node) -> str:
         return f"return {str(node.value.value)}"
+
+    def ExpressionNode(self, node):
+        return str(node.value)
+
