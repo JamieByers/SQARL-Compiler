@@ -71,6 +71,7 @@ class CodeGenerator:
                 "FunctionCall": self.FunctionCallNode,
                 "ReturnStatement": self.ReturnStatementNode,
                 "Expression": self.ExpressionNode,
+                "Array": self.ArrayNode,
             }
             return node_types[node.type](node)
         else:
@@ -171,3 +172,5 @@ class CodeGenerator:
     def ExpressionNode(self, node):
         return str(node.value)
 
+    def ArrayNode(self, node):
+        return f"[{", ".join(node.elements)}]"

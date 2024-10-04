@@ -1,6 +1,22 @@
 from typing import List, Optional, Union, Any
 from dataclasses import dataclass
 
+class TokenConstants:
+    keywords = [
+            "KEYWORD",
+            "END",
+            "VARIABLE_ASSIGNMENT",
+            "VARIABLE_DECLARATION",
+            "ASSIGNMENT",
+            "EOF",
+        ],
+    
+    # missing ord chr random
+    standard_algorithms = {
+            "length": "len",
+        }
+    
+
 @dataclass
 class ASTNode:
     type: str

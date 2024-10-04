@@ -2,7 +2,7 @@ from tests.general_test import Test
 
 test = """
 
-      DECLARE var INITIALLY 7
+      DECLARE var INITIALLY 7+2/3*8
 """
 
 t = Test(

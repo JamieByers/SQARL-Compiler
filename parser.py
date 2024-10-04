@@ -94,7 +94,7 @@ class Parser:
 
     def simple_statement(self):
         statement = ""
-        while self.current_token.type not in [
+        while self.current_token and self.current_token.type not in [
             "KEYWORD",
             "END",
             "VARIABLE_ASSIGNMENT",
@@ -106,6 +106,144 @@ class Parser:
             self.advance()
 
         return statement
+
+    def handleArithmaticExpression(self):
+        overall_values = ["+", "-", "/", "*", "(", ")", "*", "^", "MOD"]
+        operator_values = ["+", "-", "/", "*", "^", "MOD"]
+
+        def initialise_stacks():
+            tokens = []
+            operator_stack = []
+            precedence = {"+": 1, "-": 1, "*": 2, "/": 2, "^": 3, "MOD": 2}
+            output_queue = []
+
+            while self.current_token and self.current_token.type not in [
+                "KEYWORD",
+                "END",
+                "VARIABLE_ASSIGNMENT",
+                "VARIABLE_DECLARATION",
+                "ASSIGNMENT",
+                "EOF",
+            ]:
+                token = self.current_token.value
+                tokens.append(self.current_token)
+                self.advance()
+
+                if token not in overall_values:
+                    output_queue.append(token)
+
+                elif token in operator_values:
+
+                    while (
+                        operator_stack
+                        and operator_stack[-1] != "("
+                        and precedence[operator_stack[-1]] >= precedence[token]
+                    ):
+                        output_queue.append(operator_stack.pop())
+                    operator_stack.append(token)
+
+                elif token == "(":
+                    operator_stack.append(token)
+
+                elif token == ")":
+                    while operator_stack and operator_stack[-1] != "(":
+                        output_queue.append(operator_stack.pop())
+                    operator_stack.pop()
+
+            while operator_stack:
+                output_queue.append(operator_stack.pop())
+
+            return output_queue
+
+        def evaluate_stacks(output_queue):
+            stack = []
+
+            for t in output_queue:
+                if t not in operator_values:
+                    stack.append(t)
+
+                else:
+                    if len(stack) > 1:
+                        right = stack.pop()
+                        left = stack.pop()
+
+                        if left in self.variables.keys():
+                            left = self.variables[left]
+                            if isinstance(left, (Expression)):
+                                left = left.value
+                                if not isinstance(left, (str, int, float)):
+                                    left = str(left)
+                        if right in self.variables.keys():
+                            right = self.variables[right]
+                            if isinstance(right, (Expression)):
+                                right = right.value
+                                if not isinstance(right, (str, int, float)):
+                                    right = str(right)
+
+                        if t == "+":
+                            if isinstance(left, (int, float)) and isinstance(
+                                right, (int, float)
+                            ):
+                                stack.append(left + right)
+                            else:
+                                stack.append(str(left) + str(right))
+                        elif t == "-":
+                            if isinstance(left, str) and isinstance(
+                                right, (int, float)
+                            ):
+                                stack.append(left + "-" + str(right))
+                            elif isinstance(right, str) and isinstance(
+                                left, (int, float)
+                            ):
+                                stack.append(right + "-" + str(left))
+                            elif isinstance(left, str) and isinstance(right, str):
+                                raise Exception(
+                                    f"Cannot subtract two strings: {left}-{right}"
+                                )
+                            elif isinstance(left, (int, float)) and isinstance(
+                                right, (int, float)
+                            ):
+                                stack.append(left - right)
+
+                        elif t == "/":
+                            if (
+                                isinstance(left, (int, float)) is False
+                                or isinstance(right, (int, float)) is False
+                            ):
+                                raise Exception(
+                                    f"Cannot divide strings or other: {left}-{right}"
+                                )
+                            elif isinstance(left, (int, float)) and isinstance(
+                                right, (int, float)
+                            ):
+                                stack.append(left / right)
+                        elif t == "*":
+                            if isinstance(left, str) and isinstance(
+                                right, (int, float)
+                            ):
+                                stack.append(
+                                    left * int(right)
+                                )  # Convert float to int for string multiplication
+                            elif isinstance(right, str) and isinstance(
+                                left, (int, float)
+                            ):
+                                stack.append(right * int(left))
+                            elif isinstance(left, (int, float)) and isinstance(
+                                right, (int, float)
+                            ):
+                                stack.append(left * right)
+                        elif t == "^":
+                            stack.append(left**right)
+                        elif t == "MOD":
+                            stack.append(left % right)
+
+            return stack[0]
+
+        output_queue = initialise_stacks()
+        eval = evaluate_stacks(output_queue)
+        exp = Expression(type="Expression", value=eval, )
+        return exp
+
 
     def expression(self):
         def check_if_array():
@@ -129,11 +267,9 @@ class Parser:
         def handleFunctionCall():
             # -- TODO -- add standard algorithms
 
-            def handleStandardAlgorithm(identifier, params):
-                # missing ord chr random
-                standard_algorithms = {
-                    "length": "len",
-                }
+            def handleStandardAlgorithmValue(identifier, params):
+
+                standard_algorithms = TokenConstants.standard_algorithms
 
                 if identifier in standard_algorithms:
                     identifier = standard_algorithms[identifier]
@@ -143,17 +279,20 @@ class Parser:
                 if identifier == "len" and len(params) == 1:
                     return len(params[0])
 
-                return
-
+                return None
+            
+            def handleStandardAlgorithmIdentifier(identifier):
+                if identifier in TokenConstants.standard_algorithms:
+                    identifier = TokenConstants.standard_algorithms[identifier]
+                
+                return identifier
 
             function_params: List[str] = []
             function_identifier = self.current_token.value
 
-
-
             self.expect("LPAREN")
             self.advance()  # skip (
-            while self.current_token.type != "RPAREN":
+            while self.current_token and self.current_token.type != "RPAREN":
                 if self.current_token.type == "COMMA":
                     self.advance()
 
@@ -162,11 +301,19 @@ class Parser:
 
             self.advance()  # skip )
 
-            value = handleStandardAlgorithm(function_identifier, function_params)
-            if value is None:
-                value = f"{function_identifier}({', '.join(function_params) if function_params else ''})"
-                additional_context = self.simple_statement()
+            value = handleStandardAlgorithmValue(function_identifier, function_params)
+            additional_context = self.simple_statement()
 
+
+            if value is None:
+                return Expression(
+                    type="Expression",
+                    value = value,
+                )
+            else:
+                value = f"{function_identifier}({', '.join(function_params) if function_params else ''})"+additional_context
+
+            function_identifier = handleStandardAlgorithmIdentifier(function_identifier)
             ast_node = FunctionCall(
                 type="FunctionCall",
                 identifier=function_identifier,
@@ -187,7 +334,7 @@ class Parser:
 
             self.advance()  # skip ]
 
-            el = ArrayElement(type="Array", elements=array_elements,)
+            el = ArrayElement(type="Array", elements=array_elements, value=array_elements)
             return el
 
         def handleIndexFetch():
@@ -214,143 +361,7 @@ class Parser:
             exp = Expression(type="Expression", value=fetch, )
             return exp
 
-        def handleArithmaticExpression():
-            overall_values = ["+", "-", "/", "*", "(", ")", "*", "^", "MOD"]
-            operator_values = ["+", "-", "/", "*", "^", "MOD"]
 
-            def initialise_stacks():
-                tokens = []
-                operator_stack = []
-                precedence = {"+": 1, "-": 1, "*": 2, "/": 2, "^": 3, "MOD": 2}
-                output_queue = []
-
-                while self.current_token and self.current_token.type not in [
-                    "KEYWORD",
-                    "END",
-                    "VARIABLE_ASSIGNMENT",
-                    "VARIABLE_DECLARATION",
-                    "ASSIGNMENT",
-                    "EOF",
-                ]:
-                    token = self.current_token.value
-                    tokens.append(self.current_token)
-                    self.advance()
-
-                    if token not in overall_values:
-                        output_queue.append(token)
-
-                    elif token in operator_values:
-
-                        while (
-                            operator_stack
-                            and operator_stack[-1] != "("
-                            and precedence[operator_stack[-1]] >= precedence[token]
-                        ):
-                            output_queue.append(operator_stack.pop())
-                        operator_stack.append(token)
-
-                    elif token == "(":
-                        operator_stack.append(token)
-
-                    elif token == ")":
-                        while operator_stack and operator_stack[-1] != "(":
-                            output_queue.append(operator_stack.pop())
-                        operator_stack.pop()
-
-                while operator_stack:
-                    output_queue.append(operator_stack.pop())
-
-                return output_queue
-
-            def evaluate_stacks(output_queue):
-                stack = []
-
-                for t in output_queue:
-                    if t not in operator_values:
-                        stack.append(t)
-
-                    else:
-                        if len(stack) > 1:
-                            right = stack.pop()
-                            left = stack.pop()
-
-                            if left in self.variables.keys():
-                                left = self.variables[left]
-                                if isinstance(left, (Expression)):
-                                    left = left.value
-                                    if not isinstance(left, (str, int, float)):
-                                        left = str(left)
-                            if right in self.variables.keys():
-                                right = self.variables[right]
-                                if isinstance(right, (Expression)):
-                                    right = right.value
-                                    if not isinstance(right, (str, int, float)):
-                                        right = str(right)
-
-                            if t == "+":
-                                if isinstance(left, (int, float)) and isinstance(
-                                    right, (int, float)
-                                ):
-                                    stack.append(left + right)
-                                else:
-                                    stack.append(str(left) + str(right))
-                            elif t == "-":
-                                if isinstance(left, str) and isinstance(
-                                    right, (int, float)
-                                ):
-                                    stack.append(left + "-" + str(right))
-                                elif isinstance(right, str) and isinstance(
-                                    left, (int, float)
-                                ):
-                                    stack.append(right + "-" + str(left))
-                                elif isinstance(left, str) and isinstance(right, str):
-                                    raise Exception(
-                                        f"Cannot subtract two strings: {left}-{right}"
-                                    )
-                                elif isinstance(left, (int, float)) and isinstance(
-                                    right, (int, float)
-                                ):
-                                    stack.append(left - right)
-
-                            elif t == "/":
-                                if (
-                                    isinstance(left, (int, float)) is False
-                                    or isinstance(right, (int, float)) is False
-                                ):
-                                    raise Exception(
-                                        f"Cannot divide strings or other: {left}-{right}"
-                                    )
-                                elif isinstance(left, (int, float)) and isinstance(
-                                    right, (int, float)
-                                ):
-                                    stack.append(left / right)
-                            elif t == "*":
-                                if isinstance(left, str) and isinstance(
-                                    right, (int, float)
-                                ):
-                                    stack.append(
-                                        left * int(right)
-                                    )  # Convert float to int for string multiplication
-                                elif isinstance(right, str) and isinstance(
-                                    left, (int, float)
-                                ):
-                                    stack.append(right * int(left))
-                                elif isinstance(left, (int, float)) and isinstance(
-                                    right, (int, float)
-                                ):
-                                    stack.append(left * right)
-                            elif t == "^":
-                                stack.append(left**right)
-                            elif t == "MOD":
-                                stack.append(left % right)
-
-                return stack[0]
-
-            output_queue = initialise_stacks()
-            eval = evaluate_stacks(output_queue)
-            exp = Expression(type="Expression", value=eval, )
-            # self.AST_nodes.append(Expression(type="Expression", value=eval))
-            return exp
 
         is_array = check_if_array()
         is_function_call = check_if_function_call()
@@ -363,7 +374,7 @@ class Parser:
         elif is_array_fetch:
             el = handleIndexFetch()
         else:
-            el = handleArithmaticExpression()
+            el = self.handleArithmaticExpression()
 
         return el
 
