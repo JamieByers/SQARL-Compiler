@@ -138,6 +138,7 @@ class Tokeniser:
             "CHARACTER": "TYPE",
             "ARRAY": "TYPE",
             "STRING": "TYPE",
+            "NULL": "TYPE",
             "OF": "TYPE_CONNECTOR",
             "INITIALLY": "VARIABLE_DECLARATION",
             "SEND": "KEYWORD",

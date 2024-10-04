@@ -10,12 +10,29 @@ class TokenConstants:
             "ASSIGNMENT",
             "EOF",
         ]
-    
+
     # missing ord chr random
     standard_algorithms = {
             "length": "len",
         }
-    
+
+    type_translator = {
+        "CHAR": "str",
+        "STRING": "str",
+        "INTEGER": "int",
+        "REAL": "float",
+        "ARRAY": "list",
+    }
+
+    types = [
+        "CHAR",
+        "STRING",
+        "INTEGER",
+        "REAL",
+        "ARRAY",
+    ]
+
+
 
 @dataclass
 class ASTNode:
@@ -34,7 +51,7 @@ class Token:
 class VariableDeclaration(ASTNode):
     identifier: Any
     initial_value: Any
-    var_type: Optional[Union[str,type]]
+    var_type: Any
 
 @dataclass
 class VariableAssignment(ASTNode):
@@ -111,6 +128,9 @@ class Parameter:
 class ArrayElement(ASTNode):
     elements: List[Any]
     value: str
+
+    def __str__(self) -> str:
+        return str(self.elements)
 
 @dataclass
 class ElifElement(ASTNode):

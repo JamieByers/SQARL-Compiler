@@ -23,20 +23,27 @@ class Parser:
             print("Parser Failed at Token: ", self.current_token, )
             print("Token before: ", self.lexer.tokens[self.pos-1] )
             print("Parser Failed at Position: ", self.pos)
+            print()
             if error_type:
                 raise Exception(error_type, error_message)
             else:
                 raise Exception(error_message)
 
-            
+
     def stand_out(self, message):
         print()
         print(message)
         print()
 
+    def around(self, message=None):
+        if message:
+            print(message)
+        print("Before: ", self.lexer.tokens[self.pos-1])
+        print("Current: ", self.lexer.tokens[self.pos])
+        print("After: ", self.lexer.tokens[self.pos+1])
 
     def advance(self, amount=1) -> None:
-        if self.current_token: 
+        if self.current_token:
             self.pos += amount
             if self.pos >= len(self.lexer.tokens):
                 self.current_token = None
@@ -232,7 +239,7 @@ class Parser:
                                 or isinstance(right, (int, float)) is False
                             ):
                                 self.parser_error(error_message=f"Cannot divide strings or other: {left}-{right}")
-                         
+
                             elif isinstance(left, (int, float)) and isinstance(
                                 right, (int, float)
                             ):
@@ -279,11 +286,11 @@ class Parser:
                 return len(params[0])
 
             return None
-        
+
         def handleStandardAlgorithmIdentifier(identifier):
             if identifier in TokenConstants.standard_algorithms:
                 identifier = TokenConstants.standard_algorithms[identifier]
-            
+
             return identifier
 
         function_params: List[str] = []
@@ -342,22 +349,38 @@ class Parser:
             ):
                 return True
 
-        
-
-        def handleArrayExp():
-            self.advance()  # skip past (
-            array_elements = []
+        def parseArray(nested_array=[]):
+            print("starting parsearray", self.current_token)
             while self.current_token.value != "]":
-                if self.current_token and self.current_token.type == "COMMA":
+                if self.current_token.type == "COMMA":
                     self.advance()
+                elif self.current_token.value == "[":
+                    # Recursive call to handle nested arrays
+                    self.advance()
+                    nested_array.append(parseArray(nested_array))
+                elif self.current_token.type == "MATH_TERM":
+                    # Handle array multiplication
+                    self.advance()  # skip *
+                    repeat_count = int(self.current_token.value)
+                    last_element = nested_array[-1]
+                    nested_array.extend([last_element] * (repeat_count - 1))
+                    self.advance()  # skip the number
                 else:
-                    array_elements.append(str(self.current_token.value))
+                    nested_array.append(str(self.current_token.value))
                     self.advance()
 
             self.advance()  # skip ]
+            return nested_array
 
-            el = ArrayElement(type="Array", elements=array_elements, value=array_elements)
-            return el
+        def handleArrayExp():
+            array_elements = []
+
+            self.around("before parse")
+            parseArray(array_elements)
+
+            return ArrayElement(type="Array", elements=array_elements, value=str(array_elements))
+
+
 
         def handleIndexFetch():
 
@@ -417,6 +440,23 @@ class Parser:
     def add_variable(self, identifier, value):
         self.variables[identifier] = value
 
+    def handle_type(self):
+        if self.current_token.value == "ARRAY":
+            self.advance()
+            if not self.current_token.type == "TYPE_CONNECTOR":
+                return []
+            else:
+                arr = []
+                while self.current_token.type == "TYPE_CONNECTOR":
+                    self.advance() #move past of
+                    if self.current_token.value == "ARRAY":
+                        arr.append([None])
+
+                    self.advance() #either move past type or move to OR
+
+                return arr
+
+
     def variable_declaration(self):
         identifier = ""
         value = ""
@@ -432,7 +472,7 @@ class Parser:
             else:
                 self.expect("TYPE")
                 if self.current_token and self.current_token.type == "TYPE":
-                    expected_type = self.current_token.value
+                    expected_type = self.handle_type()
                     self.advance()
                     value = self.expression()
                 else:
@@ -617,28 +657,13 @@ class Parser:
     def get_params(self):
 
         def checktype(val):
-            types = [
-                "CHAR",
-                "STRING",
-                "INTEGER",
-                "REAL",
-                "ARRAY",
-            ]
-
-            if val in types:
+            if val in TokenConstants.types:
                 return True
             return False
 
         def translate_type(t):
-            type_translator = {
-                "CHAR": "str",
-                "STRING": "str",
-                "INTEGER": "int",
-                "REAL": "float",
-                "ARRAY": "list",
-            }
-            if t in type_translator:
-                return type_translator[t]
+            if t in TokenConstants.type_translator:
+                return TokenConstants.type_translator[t]
             else:
                 self.parser_error(error_type=TypeError, error_message=f"parameter type does not exist: {t}")
 
@@ -673,21 +698,13 @@ class Parser:
         self.expect("IDENTIFIER")
         function_identifier = self.current_token.value
         params = self.get_params()
-        type_translation = {
-            "STRING": "str",
-            "CHARACTER": "str",
-            "INTEGER": "int",
-            "REAL": "float",
-            "BOOLEAN": "bool",
-            "ARRAY": "LIST",
-        }
         type_expected = None
         next_token = self.next_token()
         if next_token.value == "RETURNS":
             self.advance()  # move past RETURNS
             self.expect("TYPE")
             type_expected = self.current_token.value
-            type_expected = type_translation[self.current_token.value]
+            type_expected = TokenConstants.type_translator[self.current_token.value]
 
         code_block = self.parse_block()
 
