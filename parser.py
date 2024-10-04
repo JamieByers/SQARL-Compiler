@@ -350,15 +350,14 @@ class Parser:
                 return True
 
         def parseArray(nested_array=[]):
-            print("starting parsearray", self.current_token)
-            while self.current_token.value != "]":
-                if self.current_token.type == "COMMA":
+            while self.current_token and self.current_token.value != "]":
+                if self.current_token and self.current_token.type == "COMMA":
                     self.advance()
-                elif self.current_token.value == "[":
+                elif self.current_token and self.current_token.value == "[":
                     # Recursive call to handle nested arrays
                     self.advance()
                     nested_array.append(parseArray(nested_array))
-                elif self.current_token.type == "MATH_TERM":
+                elif self.current_token and self.current_token.type == "MATH_TERM":
                     # Handle array multiplication
                     self.advance()  # skip *
                     repeat_count = int(self.current_token.value)

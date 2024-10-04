@@ -1,7 +1,7 @@
 from tests.general_test import Test
 
 test = """
-      DECLARE var INITIALLY AS ARRAY OF ARRAY [[]*2]
+      DECLARE var INITIALLY [NULL]*2
 """
 
 t = Test(
