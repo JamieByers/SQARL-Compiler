@@ -9,7 +9,7 @@ class TokenConstants:
             "VARIABLE_DECLARATION",
             "ASSIGNMENT",
             "EOF",
-        ],
+        ]
     
     # missing ord chr random
     standard_algorithms = {
@@ -57,6 +57,7 @@ class FunctionDeclaration(ASTNode):
 class FunctionCall(ASTNode):
     identifier: str
     params: Union[str, int, float, bool, ASTNode, List[str]]
+    additional_context: Any
     value: Any
 
 @dataclass

@@ -16,19 +16,41 @@ class Parser:
         self.indent_level = 0
         self.variables = {}
 
+
+
+    def parser_error(self, error_message, error_type=None):
+        if error_message:
+            print("Parser Failed at Token: ", self.current_token, )
+            print("Token before: ", self.lexer.tokens[self.pos-1] )
+            print("Parser Failed at Position: ", self.pos)
+            if error_type:
+                raise Exception(error_type, error_message)
+            else:
+                raise Exception(error_message)
+
+            
+    def stand_out(self, message):
+        print()
+        print(message)
+        print()
+
+
     def advance(self, amount=1) -> None:
-        self.pos += amount
-        if self.pos >= len(self.lexer.tokens):
-            self.current_token = None
-        else:
-            self.current_token = self.lexer.tokens[self.pos]
+        if self.current_token: 
+            self.pos += amount
+            if self.pos >= len(self.lexer.tokens):
+                self.current_token = None
+            else:
+                self.current_token = self.lexer.tokens[self.pos]
 
     def next_token(self):
         return self.lexer.tokens[self.pos + 1]
 
     def expect(self, expected):
-        if expected == self.lexer.tokens[self.pos + 1].type:
+        if self.pos < len(self.lexer.tokens) and expected == self.lexer.tokens[self.pos + 1].type:
             self.advance()
+        elif self.pos >= len(self.lexer.tokens):
+                self.current_token = None
         else:
             print(
                 "ERROR UNEXPECTED TOKEN: ",
@@ -42,7 +64,7 @@ class Parser:
             print(statement)
 
     def parse(self) -> List:
-        while self.pos <= len(self.lexer.tokens) and self.current_token is not None:
+        while self.current_token is not None and self.pos <= len(self.lexer.tokens):
             statement = self.statement()
             if statement:
                 self.statements.append(statement)
@@ -60,16 +82,17 @@ class Parser:
             "SUBPROGRAM": self.function_declaration,
         }
 
-        if self.current_token.type in statement_types:
+
+        if self.current_token and self.current_token.type in statement_types:
             return statement_types[self.current_token.type]()
-        elif self.current_token.type == "END":
+        elif self.current_token and self.current_token.type == "END":
             self.advance()
-        elif self.current_token.type == "EOF":
+        elif self.current_token and self.current_token.type == "EOF":
             self.current_token = None
             self.advance()
             return None
         else:
-            raise Exception("Token not recognised")
+            self.parser_error("Token not recognised")
 
     def keyword(self):
         keyword_types = {
@@ -80,10 +103,10 @@ class Parser:
             "RETURN": self.return_statement,
         }
 
-        if self.current_token.value in keyword_types:
+        if self.current_token and self.current_token.value in keyword_types:
             return keyword_types[self.current_token.value]()
         else:
-            raise Exception(KeyError, f"Keyword token does not match keyword types: {self.current_token}")
+            self.parser_error(error_message=f"Keyword token does not match keyword types: {self.current_token}", error_type=KeyError)
 
     def keyword_continued(self):
         keyword_cont_types = {
@@ -117,38 +140,38 @@ class Parser:
             precedence = {"+": 1, "-": 1, "*": 2, "/": 2, "^": 3, "MOD": 2}
             output_queue = []
 
-            while self.current_token and self.current_token.type not in [
-                "KEYWORD",
-                "END",
-                "VARIABLE_ASSIGNMENT",
-                "VARIABLE_DECLARATION",
-                "ASSIGNMENT",
-                "EOF",
-            ]:
-                token = self.current_token.value
-                tokens.append(self.current_token)
-                self.advance()
+            while self.current_token and self.current_token.type not in TokenConstants.keywords:
+                if self.current_token and self.current_token.type == "IDENTIFIER" and self.next_token().type == "LPAREN":
+                    function_call = self.handleFunctionCall().value
+                    output_queue.append(function_call)
+                    tokens.append(function_call)
 
-                if token not in overall_values:
-                    output_queue.append(token)
+                else:
+                    token = self.current_token.value
+                    tokens.append(self.current_token)
+                    self.advance()
 
-                elif token in operator_values:
 
-                    while (
-                        operator_stack
-                        and operator_stack[-1] != "("
-                        and precedence[operator_stack[-1]] >= precedence[token]
-                    ):
-                        output_queue.append(operator_stack.pop())
-                    operator_stack.append(token)
+                    if token not in overall_values:
+                        output_queue.append(token)
 
-                elif token == "(":
-                    operator_stack.append(token)
+                    elif token in operator_values:
 
-                elif token == ")":
-                    while operator_stack and operator_stack[-1] != "(":
-                        output_queue.append(operator_stack.pop())
-                    operator_stack.pop()
+                        while (
+                            operator_stack
+                            and operator_stack[-1] != "("
+                            and precedence[operator_stack[-1]] >= precedence[token]
+                        ):
+                            output_queue.append(operator_stack.pop())
+                        operator_stack.append(token)
+
+                    elif token == "(":
+                        operator_stack.append(token)
+
+                    elif token == ")":
+                        while operator_stack and operator_stack[-1] != "(":
+                            output_queue.append(operator_stack.pop())
+                        operator_stack.pop()
 
             while operator_stack:
                 output_queue.append(operator_stack.pop())
@@ -197,9 +220,7 @@ class Parser:
                             ):
                                 stack.append(right + "-" + str(left))
                             elif isinstance(left, str) and isinstance(right, str):
-                                raise Exception(
-                                    f"Cannot subtract two strings: {left}-{right}"
-                                )
+                                self.parser_error(error_message=f"Cannot subtract two strings: {left}-{right}")
                             elif isinstance(left, (int, float)) and isinstance(
                                 right, (int, float)
                             ):
@@ -210,9 +231,8 @@ class Parser:
                                 isinstance(left, (int, float)) is False
                                 or isinstance(right, (int, float)) is False
                             ):
-                                raise Exception(
-                                    f"Cannot divide strings or other: {left}-{right}"
-                                )
+                                self.parser_error(error_message=f"Cannot divide strings or other: {left}-{right}")
+                         
                             elif isinstance(left, (int, float)) and isinstance(
                                 right, (int, float)
                             ):
@@ -244,16 +264,74 @@ class Parser:
         exp = Expression(type="Expression", value=eval, )
         return exp
 
+    def handleFunctionCall(self):
+
+        def handleStandardAlgorithmValue(identifier, params):
+
+            standard_algorithms = TokenConstants.standard_algorithms
+
+            if identifier in standard_algorithms:
+                identifier = standard_algorithms[identifier]
+            else:
+                return None
+
+            if identifier == "len" and len(params) == 1:
+                return len(params[0])
+
+            return None
+        
+        def handleStandardAlgorithmIdentifier(identifier):
+            if identifier in TokenConstants.standard_algorithms:
+                identifier = TokenConstants.standard_algorithms[identifier]
+            
+            return identifier
+
+        function_params: List[str] = []
+        function_identifier = self.current_token.value
+
+        self.expect("LPAREN")
+        self.advance()  # skip (
+        while self.current_token and self.current_token.type != "RPAREN":
+            if self.current_token and self.current_token.type == "COMMA":
+                self.advance()
+
+            function_params.append(self.current_token.value)
+            self.advance()
+
+        self.advance()  # skip )
+
+        value = handleStandardAlgorithmValue(function_identifier, function_params)
+        additional_context = self.simple_statement()
+
+
+        if value is None:
+            return Expression(
+                type="Expression",
+                value = value,
+            )
+        else:
+            value = f"{function_identifier}({', '.join(function_params) if function_params else ''})"+additional_context
+
+        function_identifier = handleStandardAlgorithmIdentifier(function_identifier)
+        ast_node = FunctionCall(
+            type="FunctionCall",
+            identifier=function_identifier,
+            params=function_params,
+            additional_context=additional_context,
+            value=value
+        )
+        return ast_node
+
 
     def expression(self):
         def check_if_array():
-            if self.current_token.type == "LSQPAREN":
+            if self.current_token and self.current_token.type == "LSQPAREN":
                 return True
             return False
 
         def check_if_function_call():
             next_token = self.next_token()
-            if self.current_token.type == "IDENTIFIER" and next_token.type == "LPAREN":
+            if self.current_token and self.current_token.type == "IDENTIFIER" and next_token.type == "LPAREN":
                 return True
             return False
 
@@ -264,69 +342,13 @@ class Parser:
             ):
                 return True
 
-        def handleFunctionCall():
-            # -- TODO -- add standard algorithms
-
-            def handleStandardAlgorithmValue(identifier, params):
-
-                standard_algorithms = TokenConstants.standard_algorithms
-
-                if identifier in standard_algorithms:
-                    identifier = standard_algorithms[identifier]
-                else:
-                    return None
-
-                if identifier == "len" and len(params) == 1:
-                    return len(params[0])
-
-                return None
-            
-            def handleStandardAlgorithmIdentifier(identifier):
-                if identifier in TokenConstants.standard_algorithms:
-                    identifier = TokenConstants.standard_algorithms[identifier]
-                
-                return identifier
-
-            function_params: List[str] = []
-            function_identifier = self.current_token.value
-
-            self.expect("LPAREN")
-            self.advance()  # skip (
-            while self.current_token and self.current_token.type != "RPAREN":
-                if self.current_token.type == "COMMA":
-                    self.advance()
-
-                function_params.append(self.current_token.value)
-                self.advance()
-
-            self.advance()  # skip )
-
-            value = handleStandardAlgorithmValue(function_identifier, function_params)
-            additional_context = self.simple_statement()
-
-
-            if value is None:
-                return Expression(
-                    type="Expression",
-                    value = value,
-                )
-            else:
-                value = f"{function_identifier}({', '.join(function_params) if function_params else ''})"+additional_context
-
-            function_identifier = handleStandardAlgorithmIdentifier(function_identifier)
-            ast_node = FunctionCall(
-                type="FunctionCall",
-                identifier=function_identifier,
-                params=function_params,
-                value=value
-            )
-            return ast_node
+        
 
         def handleArrayExp():
             self.advance()  # skip past (
             array_elements = []
             while self.current_token.value != "]":
-                if self.current_token.type == "COMMA":
+                if self.current_token and self.current_token.type == "COMMA":
                     self.advance()
                 else:
                     array_elements.append(str(self.current_token.value))
@@ -370,7 +392,7 @@ class Parser:
         if is_array:
             el = handleArrayExp()
         elif is_function_call:
-            el = handleFunctionCall()
+            el = self.handleFunctionCall()
         elif is_array_fetch:
             el = handleIndexFetch()
         else:
@@ -401,22 +423,20 @@ class Parser:
         expected_type = None
 
         self.expect("IDENTIFIER")
-        if self.current_token.type == "IDENTIFIER":
+        if self.current_token and self.current_token.type == "IDENTIFIER":
             identifier = self.expression()
 
-            # print("ct", self.current_token)
-            # self.expect("VARIABLE_DECLARATION")
             self.advance()  # move up to var value
-            if self.current_token.value != "AS":
+            if self.current_token and self.current_token.value != "AS":
                 value = self.expression()
             else:
                 self.expect("TYPE")
-                if self.current_token.type == "TYPE":
+                if self.current_token and self.current_token.type == "TYPE":
                     expected_type = self.current_token.value
                     self.advance()
                     value = self.expression()
                 else:
-                    raise Exception("Expected a type definition")
+                    self.parser_error(error_message="Expected a type definition")
         else:
             print("EXPECTED IDENTIFIER")
             return False
@@ -442,7 +462,6 @@ class Parser:
         variable_value = self.expression()
         variable_value_value = variable_value.value
 
-        statement = f"{variable_identifier_value} = {variable_value_value}\n"
         self.add_variable(variable_identifier_value, variable_value_value)
 
         exp = VariableAssignment(
@@ -475,9 +494,9 @@ class Parser:
         else_if_block = None
         else_block = None
 
-        if self.current_token.value == "ELSE IF":
+        if self.current_token and self.current_token.value == "ELSE IF":
             else_if_block = self.else_if_statement()
-        if self.current_token.value == "ELSE":
+        if self.current_token and self.current_token.value == "ELSE":
             else_block = self.else_statement()
 
         el = IfStatement(
@@ -511,7 +530,7 @@ class Parser:
 
     def for_statement(self):
         self.advance()
-        if self.current_token.type == "IDENTIFIER":
+        if self.current_token and self.current_token.type == "IDENTIFIER":
             for_loop_identifier = self.current_token.value
             self.expect("KEYWORD")  # move to FROM
             self.advance()  # move to starting index
@@ -523,7 +542,7 @@ class Parser:
 
             self.advance()
             step_count: int = 1
-            if self.current_token.value == "STEP":
+            if self.current_token and self.current_token.value == "STEP":
                 self.advance()
                 step_count = self.current_token.value
                 self.expect("BLOCK_START")
@@ -541,7 +560,7 @@ class Parser:
 
             return el
 
-        elif self.current_token.value == "EACH":
+        elif self.current_token and self.current_token.value == "EACH":
             self.expect("IDENTIFIER")
             for_loop_identifier = self.current_token.value
             self.expect("KEYWORD")
@@ -581,12 +600,12 @@ class Parser:
             self.advance()  # skip past THEN
 
         block_statements = []
-        while self.current_token.type not in ["END", "KEYWORD_CONTINUED", "EOF"]:
+        while self.current_token and self.current_token.type not in ["END", "KEYWORD_CONTINUED", "EOF"]:
             statement = self.statement()
             block_statements.append(statement)
 
 
-        if self.current_token.type == "END":
+        if self.current_token and self.current_token.type == "END":
             self.advance()  # end block
 
         self.indent_level -= 1
@@ -621,13 +640,13 @@ class Parser:
             if t in type_translator:
                 return type_translator[t]
             else:
-                raise Exception(TypeError, f"parameter type does not exist: {t}")
+                self.parser_error(error_type=TypeError, error_message=f"parameter type does not exist: {t}")
 
         self.expect("LPAREN")
         self.advance()  # skip (
         params = []
         while self.current_token.type != "RPAREN":
-            if self.current_token.type == "TYPE":
+            if self.current_token and self.current_token.type == "TYPE":
                 param = Parameter(value="", type="")
                 if checktype(self.current_token.value):
                     param.type = translate_type(self.current_token.value)
@@ -636,10 +655,8 @@ class Parser:
                     params.append(param)
                     self.advance()
                 else:
-                    raise Exception(
-                        "TYPE EXPECTED FOR PARAM. ERROR AT TOKEN " + self.current_token
-                    )
-            elif self.current_token.type == "COMMA":
+                    self.parser_error(error_message=("TYPE EXPECTED FOR PARAM. ERROR AT TOKEN " + self.current_token))
+            elif self.current_token and self.current_token.type == "COMMA":
                 self.advance()
 
         return params

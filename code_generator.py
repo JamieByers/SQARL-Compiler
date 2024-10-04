@@ -164,7 +164,7 @@ class CodeGenerator:
         return code
 
     def FunctionCallNode(self, node):
-        return f"{node.identifier}({', '.join(node.params) if node.params else ''})"
+        return f"{node.identifier}({', '.join(node.params) if node.params else ''}){str(node.additional_context) if node.additional_context else ""}"
 
     def ReturnStatementNode(self, node) -> str:
         return f"return {str(node.value.value)}"
