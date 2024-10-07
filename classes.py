@@ -22,6 +22,7 @@ class TokenConstants:
         "INTEGER": "int",
         "REAL": "float",
         "ARRAY": "list",
+        "NULL": "None",
     }
 
     types = [
@@ -30,7 +31,13 @@ class TokenConstants:
         "INTEGER",
         "REAL",
         "ARRAY",
+        "NULL",
     ]
+
+    overall_values = ["+", "-", "/", "*", ",", "(", ")", "[", "]", "*", "^", "MOD"]
+    evaluation_overall_values = ["+", "-", "/", "*", ",", "(", ")", "[", "]", "*", "^", "MOD", "list"]
+    operator_values = ["+", "-", "/", "*", "^", "MOD"]
+
 
 
 
@@ -109,7 +116,7 @@ class ReturnStatement(ASTNode):
 
 @dataclass
 class Expression(ASTNode):
-    value: Union[str, int, float, bool]
+    value: Any
 
 @dataclass
 class SimpleStatement(ASTNode):

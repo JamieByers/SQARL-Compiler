@@ -91,8 +91,12 @@ class CodeGenerator:
 
     def VariableDeclarationNode(self, node) -> str:
         identifier, value = self.variable_values(node.identifier, node.initial_value)
+        if node.var_type:
+            var_type = ":"+node.var_type
+        else:
+            var_type = ""
 
-        return f"{identifier} = {value}"
+        return f"{identifier}{var_type} = {value}"
 
     def VariableAssignmentNode(self, node) -> str:
         identifier, value = self.variable_values(self.identifier, self.value)

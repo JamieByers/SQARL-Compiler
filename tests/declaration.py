@@ -1,14 +1,14 @@
 from tests.general_test import Test
 
 test = """
-      DECLARE var INITIALLY [NULL]*2
+      DECLARE num INITIALLY AS INTEGER 4
 """
 
 t = Test(
     test,
     test_name="declaration",
     test_type="code generator",
-    print_tokens=False,
+    print_tokens=True,
     print_ASTNodes=True
 )
 

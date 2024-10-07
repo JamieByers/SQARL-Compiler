@@ -8,27 +8,25 @@ class Parser:
         self.lexer = Tokeniser(string)
         self.lexer.tokenise()
         self.pos = 0
-        self.current_token = (
-            self.lexer.tokens[self.pos] if self.lexer.tokens else None
-        )
+        self.current_token = self.lexer.tokens[self.pos] if self.lexer.tokens else None
         self.statements = []
         self.AST_nodes = []
         self.indent_level = 0
         self.variables = {}
 
-
-
     def parser_error(self, error_message, error_type=None):
         if error_message:
-            print("Parser Failed at Token: ", self.current_token, )
-            print("Token before: ", self.lexer.tokens[self.pos-1] )
+            print(
+                "Parser Failed at Token: ",
+                self.current_token,
+            )
+            print("Token before: ", self.lexer.tokens[self.pos - 1])
             print("Parser Failed at Position: ", self.pos)
             print()
             if error_type:
                 raise Exception(error_type, error_message)
             else:
                 raise Exception(error_message)
-
 
     def stand_out(self, message):
         print()
@@ -38,9 +36,9 @@ class Parser:
     def around(self, message=None):
         if message:
             print(message)
-        print("Before: ", self.lexer.tokens[self.pos-1])
+        print("Before: ", self.lexer.tokens[self.pos - 1])
         print("Current: ", self.lexer.tokens[self.pos])
-        print("After: ", self.lexer.tokens[self.pos+1])
+        print("After: ", self.lexer.tokens[self.pos + 1])
 
     def advance(self, amount=1) -> None:
         if self.current_token:
@@ -54,10 +52,13 @@ class Parser:
         return self.lexer.tokens[self.pos + 1]
 
     def expect(self, expected):
-        if self.pos < len(self.lexer.tokens) and expected == self.lexer.tokens[self.pos + 1].type:
+        if (
+            self.pos < len(self.lexer.tokens)
+            and expected == self.lexer.tokens[self.pos + 1].type
+        ):
             self.advance()
         elif self.pos >= len(self.lexer.tokens):
-                self.current_token = None
+            self.current_token = None
         else:
             print(
                 "ERROR UNEXPECTED TOKEN: ",
@@ -79,7 +80,6 @@ class Parser:
         print(self.statements)
         return self.statements
 
-
     def statement(self):
         statement_types = {
             "VARIABLE_DECLARATION": self.variable_declaration,
@@ -88,7 +88,6 @@ class Parser:
             "KEYWORD_CONTINUED": self.keyword_continued,
             "SUBPROGRAM": self.function_declaration,
         }
-
 
         if self.current_token and self.current_token.type in statement_types:
             return statement_types[self.current_token.type]()
@@ -113,7 +112,10 @@ class Parser:
         if self.current_token and self.current_token.value in keyword_types:
             return keyword_types[self.current_token.value]()
         else:
-            self.parser_error(error_message=f"Keyword token does not match keyword types: {self.current_token}", error_type=KeyError)
+            self.parser_error(
+                error_message=f"Keyword token does not match keyword types: {self.current_token}",
+                error_type=KeyError,
+            )
 
     def keyword_continued(self):
         keyword_cont_types = {
@@ -137,139 +139,150 @@ class Parser:
 
         return statement
 
+    def initialise_stacks(self):
+        operator_stack = []
+        precedence = {"+": 1, "-": 1, "*": 2, "/": 2, "^": 3, "MOD": 2}
+        output_queue = []
+
+        while (
+            self.current_token
+            and self.current_token.type not in TokenConstants.keywords
+        ):
+            if (
+                self.current_token
+                and self.current_token.type == "IDENTIFIER"
+                and self.next_token().type == "LPAREN"
+            ):
+                function_call = self.handleFunctionCall().value
+                output_queue.append(function_call)
+            else:
+                token = self.current_token.value
+                if token in self.variables:
+                    token = self.variables[token]
+
+                self.advance()
+
+                if token not in TokenConstants.overall_values:
+                    output_queue.append(token)
+                elif token in TokenConstants.operator_values:
+                    while (
+                        operator_stack
+                        and operator_stack[-1] != "("
+                        and precedence[operator_stack[-1]] >= precedence[token]
+                    ):
+                        output_queue.append(operator_stack.pop())
+                    operator_stack.append(token)
+                elif token == ",":
+                    continue
+                elif token == "(":
+                    operator_stack.append(token)
+                elif token == ")":
+                    while operator_stack and operator_stack[-1] != "(":
+                        output_queue.append(operator_stack.pop())
+                    operator_stack.pop()
+                elif token == "[":
+                    operator_stack.append(token)
+                elif token == "]":
+                    while operator_stack and operator_stack[-1] != "[":
+                        output_queue.append(operator_stack.pop())
+                    operator_stack.pop()  # Remove '['
+                    output_queue.append("list")
+
+        while operator_stack:
+            output_queue.append(operator_stack.pop())
+
+        return output_queue
+
+    def appropraite(self, left, right):
+        if not isinstance(left, list) and left in self.variables.keys():
+            left = self.variables[left]
+            if isinstance(left, (Expression)):
+                left = left.value
+                if not isinstance(left, (str, int, float)):
+                    left = str(left)
+        if not isinstance(right, list) and right in self.variables.keys():
+            right = self.variables[right]
+            if isinstance(right, (Expression)):
+                right = right.value
+                if not isinstance(right, (str, int, float)):
+                    right = str(right)
+
+        return left, right
+
+    def evaluate_stacks(self, output_queue):
+        stack = []
+
+        for t in output_queue:
+            print(t, stack)
+            if t not in TokenConstants.evaluation_overall_values:
+                stack.append(t)
+            elif t == "list":
+                lst = []
+                while stack:
+                    lst.append(stack.pop(0))
+                stack.append(lst)
+            else:
+                if len(stack) > 1:
+                    right = stack.pop()
+                    left = stack.pop()
+
+                    left, right = self.appropraite(left, right)
+
+                    if t == "+":
+                        if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+                            stack.append(left + right)
+                        else:
+                            stack.append(str(left) + str(right))
+                    elif t == "-":
+                        if isinstance(left, str) and isinstance(right, (int, float)):
+                            stack.append(left + "-" + str(right))
+                        elif isinstance(right, str) and isinstance(left, (int, float)):
+                            stack.append(right + "-" + str(left))
+                        elif isinstance(left, str) and isinstance(right, str):
+                            self.parser_error(
+                                error_message=f"Cannot subtract two strings: {left}-{right}"
+                            )
+                        elif isinstance(left, (int, float)) and isinstance(right, (int, float)):
+                            stack.append(left - right)
+                    elif t == "/":
+                        if isinstance(left, (int, float)) is False or isinstance(right, (int, float)) is False:
+                            self.parser_error(
+                                error_message=f"Cannot divide strings or other: {left}-{right}"
+                            )
+                        elif isinstance(left, (int, float)) and isinstance(right, (int, float)):
+                            stack.append(left / right)
+                    elif t == "*":
+                        if isinstance(left, str) and isinstance(right, (int, float)):
+                            stack.append(left * int(right))
+                        elif isinstance(right, str) and isinstance(left, (int, float)):
+                            stack.append(right * int(left))
+                        elif isinstance(left, (int, float)) and isinstance(right, (int, float)):
+                            stack.append(left * right)
+                        elif (isinstance(left, list) and isinstance(right, (int, float))) or (isinstance(left, (int, float)) and isinstance(right, list)):
+                            if isinstance(left, (int, float)):
+                                left = int(left)
+                            if isinstance(right, (int, float)):
+                                right = int(right)
+                            print("LIST TYPES: ", left, type(left), right, type(right))
+                            stack.append(left * right)
+                    elif t == "^":
+                        stack.append(left ** right)
+                    elif t == "MOD":
+                        stack.append(left % right)
+
+        print(stack)
+        return stack[0]
+
     def handleArithmaticExpression(self):
-        overall_values = ["+", "-", "/", "*", "(", ")", "*", "^", "MOD"]
-        operator_values = ["+", "-", "/", "*", "^", "MOD"]
-
-        def initialise_stacks():
-            tokens = []
-            operator_stack = []
-            precedence = {"+": 1, "-": 1, "*": 2, "/": 2, "^": 3, "MOD": 2}
-            output_queue = []
-
-            while self.current_token and self.current_token.type not in TokenConstants.keywords:
-                if self.current_token and self.current_token.type == "IDENTIFIER" and self.next_token().type == "LPAREN":
-                    function_call = self.handleFunctionCall().value
-                    output_queue.append(function_call)
-                    tokens.append(function_call)
-
-                else:
-                    token = self.current_token.value
-                    tokens.append(self.current_token)
-                    self.advance()
-
-
-                    if token not in overall_values:
-                        output_queue.append(token)
-
-                    elif token in operator_values:
-
-                        while (
-                            operator_stack
-                            and operator_stack[-1] != "("
-                            and precedence[operator_stack[-1]] >= precedence[token]
-                        ):
-                            output_queue.append(operator_stack.pop())
-                        operator_stack.append(token)
-
-                    elif token == "(":
-                        operator_stack.append(token)
-
-                    elif token == ")":
-                        while operator_stack and operator_stack[-1] != "(":
-                            output_queue.append(operator_stack.pop())
-                        operator_stack.pop()
-
-            while operator_stack:
-                output_queue.append(operator_stack.pop())
-
-            return output_queue
-
-        def evaluate_stacks(output_queue):
-            stack = []
-
-            for t in output_queue:
-                if t not in operator_values:
-                    stack.append(t)
-
-                else:
-                    if len(stack) > 1:
-                        right = stack.pop()
-                        left = stack.pop()
-
-                        if left in self.variables.keys():
-                            left = self.variables[left]
-                            if isinstance(left, (Expression)):
-                                left = left.value
-                                if not isinstance(left, (str, int, float)):
-                                    left = str(left)
-                        if right in self.variables.keys():
-                            right = self.variables[right]
-                            if isinstance(right, (Expression)):
-                                right = right.value
-                                if not isinstance(right, (str, int, float)):
-                                    right = str(right)
-
-                        if t == "+":
-                            if isinstance(left, (int, float)) and isinstance(
-                                right, (int, float)
-                            ):
-                                stack.append(left + right)
-                            else:
-                                stack.append(str(left) + str(right))
-                        elif t == "-":
-                            if isinstance(left, str) and isinstance(
-                                right, (int, float)
-                            ):
-                                stack.append(left + "-" + str(right))
-                            elif isinstance(right, str) and isinstance(
-                                left, (int, float)
-                            ):
-                                stack.append(right + "-" + str(left))
-                            elif isinstance(left, str) and isinstance(right, str):
-                                self.parser_error(error_message=f"Cannot subtract two strings: {left}-{right}")
-                            elif isinstance(left, (int, float)) and isinstance(
-                                right, (int, float)
-                            ):
-                                stack.append(left - right)
-
-                        elif t == "/":
-                            if (
-                                isinstance(left, (int, float)) is False
-                                or isinstance(right, (int, float)) is False
-                            ):
-                                self.parser_error(error_message=f"Cannot divide strings or other: {left}-{right}")
-
-                            elif isinstance(left, (int, float)) and isinstance(
-                                right, (int, float)
-                            ):
-                                stack.append(left / right)
-                        elif t == "*":
-                            if isinstance(left, str) and isinstance(
-                                right, (int, float)
-                            ):
-                                stack.append(
-                                    left * int(right)
-                                )  # Convert float to int for string multiplication
-                            elif isinstance(right, str) and isinstance(
-                                left, (int, float)
-                            ):
-                                stack.append(right * int(left))
-                            elif isinstance(left, (int, float)) and isinstance(
-                                right, (int, float)
-                            ):
-                                stack.append(left * right)
-                        elif t == "^":
-                            stack.append(left**right)
-                        elif t == "MOD":
-                            stack.append(left % right)
-
-            return stack[0]
-
-        output_queue = initialise_stacks()
-        eval = evaluate_stacks(output_queue)
-        exp = Expression(type="Expression", value=eval, )
+        output_queue = self.initialise_stacks()
+        print(output_queue)
+        eval = self.evaluate_stacks(output_queue)
+        exp = Expression(
+            type="Expression",
+            value=eval,
+        )
         return exp
+
 
     def handleFunctionCall(self):
 
@@ -310,14 +323,16 @@ class Parser:
         value = handleStandardAlgorithmValue(function_identifier, function_params)
         additional_context = self.simple_statement()
 
-
         if value is None:
             return Expression(
                 type="Expression",
-                value = value,
+                value=value,
             )
         else:
-            value = f"{function_identifier}({', '.join(function_params) if function_params else ''})"+additional_context
+            value = (
+                f"{function_identifier}({', '.join(function_params) if function_params else ''})"
+                + additional_context
+            )
 
         function_identifier = handleStandardAlgorithmIdentifier(function_identifier)
         ast_node = FunctionCall(
@@ -325,20 +340,18 @@ class Parser:
             identifier=function_identifier,
             params=function_params,
             additional_context=additional_context,
-            value=value
+            value=value,
         )
         return ast_node
 
-
     def expression(self):
-        def check_if_array():
-            if self.current_token and self.current_token.type == "LSQPAREN":
-                return True
-            return False
-
         def check_if_function_call():
             next_token = self.next_token()
-            if self.current_token and self.current_token.type == "IDENTIFIER" and next_token.type == "LPAREN":
+            if (
+                self.current_token
+                and self.current_token.type == "IDENTIFIER"
+                and next_token.type == "LPAREN"
+            ):
                 return True
             return False
 
@@ -348,38 +361,6 @@ class Parser:
                 and self.next_token().value == "["
             ):
                 return True
-
-        def parseArray(nested_array=[]):
-            while self.current_token and self.current_token.value != "]":
-                if self.current_token and self.current_token.type == "COMMA":
-                    self.advance()
-                elif self.current_token and self.current_token.value == "[":
-                    # Recursive call to handle nested arrays
-                    self.advance()
-                    nested_array.append(parseArray(nested_array))
-                elif self.current_token and self.current_token.type == "MATH_TERM":
-                    # Handle array multiplication
-                    self.advance()  # skip *
-                    repeat_count = int(self.current_token.value)
-                    last_element = nested_array[-1]
-                    nested_array.extend([last_element] * (repeat_count - 1))
-                    self.advance()  # skip the number
-                else:
-                    nested_array.append(str(self.current_token.value))
-                    self.advance()
-
-            self.advance()  # skip ]
-            return nested_array
-
-        def handleArrayExp():
-            array_elements = []
-
-            self.around("before parse")
-            parseArray(array_elements)
-
-            return ArrayElement(type="Array", elements=array_elements, value=str(array_elements))
-
-
 
         def handleIndexFetch():
 
@@ -402,18 +383,16 @@ class Parser:
             fetch += "]"
             self.advance()  # move past ]
 
-            exp = Expression(type="Expression", value=fetch, )
+            exp = Expression(
+                type="Expression",
+                value=fetch,
+            )
             return exp
 
-
-
-        is_array = check_if_array()
         is_function_call = check_if_function_call()
         is_array_fetch = check_if_index_fetch()
 
-        if is_array:
-            el = handleArrayExp()
-        elif is_function_call:
+        if is_function_call:
             el = self.handleFunctionCall()
         elif is_array_fetch:
             el = handleIndexFetch()
@@ -431,9 +410,11 @@ class Parser:
 
         self.advance()  # skip past DISPLAY
 
-
         self.advance()
-        exp = DisplayStatement(type="DisplayStatement", value=to_print, )
+        exp = DisplayStatement(
+            type="DisplayStatement",
+            value=to_print,
+        )
         return exp
 
     def add_variable(self, identifier, value):
@@ -447,14 +428,47 @@ class Parser:
             else:
                 arr = []
                 while self.current_token.type == "TYPE_CONNECTOR":
-                    self.advance() #move past of
+                    self.advance()  # move past of
                     if self.current_token.value == "ARRAY":
                         arr.append([None])
+                    else:
+                        arr.append
 
-                    self.advance() #either move past type or move to OR
+                    self.advance()  # either move past type or move to OR
 
                 return arr
 
+    # ARRAY OF ARRAY OF BOOLEAN = [[bool]]
+    def array_of_array_type(self, lst):
+
+        if self.next_token().type == "TYPE_CONNECTOR":
+            self.advance() # move up to OF
+            self.advance() # move up to TYPE
+            if self.current_token.type == "TYPE" and self.current_token.value == "ARRAY":
+                lst.append([])
+                self.array_of_array_type(lst)
+            else:
+                lst.append(self.current_token.value)
+
+        return lst
+
+
+    def handle_type2(self):
+        if self.current_token.type == "TYPE":
+            if self.current_token.value == "ARRAY":
+                arr = []
+                self.advance()
+                if self.current_token.type == "TYPE_CONNECTOR":
+                    self.advance() #move past OF to TYPE
+                    if self.current_token.type == "TYPE" and not self.current_token.value == "ARRAY":
+                        arr.append(TokenConstants.type_translator[self.current_token.value])
+                    else:
+                        arr.append(self.array_of_array_type([]))
+                else:
+                    return arr
+
+        else:
+            self.parser_error(error_message="Expected type", error_type=TypeError)
 
     def variable_declaration(self):
         identifier = ""
@@ -528,8 +542,6 @@ class Parser:
 
         code_block = self.parse_block()
 
-
-
         else_if_block = None
         else_block = None
 
@@ -539,12 +551,12 @@ class Parser:
             else_block = self.else_statement()
 
         el = IfStatement(
-                type="IfStatement",
-                condition=condition,
-                code_block=code_block,
-                else_block=else_block,
-                else_if_block=else_if_block,
-            )
+            type="IfStatement",
+            condition=condition,
+            code_block=code_block,
+            else_block=else_block,
+            else_if_block=else_if_block,
+        )
 
         return el
 
@@ -562,7 +574,6 @@ class Parser:
         self.advance()
 
         code_block = self.parse_block(skip_then=False)
-
 
         el = ElseElement(type="ElseElement", code_block=code_block)
         return el
@@ -589,13 +600,13 @@ class Parser:
             for_block = self.parse_block()
 
             el = ForStatement(
-                    type="ForStatement",
-                    variable=for_loop_identifier,
-                    start=starting_index,
-                    end=loop_length,
-                    step=step_count,
-                    code_block=for_block,
-                )
+                type="ForStatement",
+                variable=for_loop_identifier,
+                start=starting_index,
+                end=loop_length,
+                step=step_count,
+                code_block=for_block,
+            )
 
             return el
 
@@ -610,11 +621,11 @@ class Parser:
             for_code = self.parse_block()
 
             el = ForEachStatement(
-                    type="ForEachStatement",
-                    variable=for_loop_identifier,
-                    loop_from=looping_from,
-                    code_block=for_code,
-                )
+                type="ForEachStatement",
+                variable=for_loop_identifier,
+                loop_from=looping_from,
+                code_block=for_code,
+            )
 
             return el
 
@@ -627,10 +638,11 @@ class Parser:
 
         code_block = self.parse_block()
 
-
         el = WhileStatement(
-                type="WhileStatement", condition=condition, code_block=code_block,
-            )
+            type="WhileStatement",
+            condition=condition,
+            code_block=code_block,
+        )
         return el
 
     def parse_block(self, skip_then=True):
@@ -639,10 +651,13 @@ class Parser:
             self.advance()  # skip past THEN
 
         block_statements = []
-        while self.current_token and self.current_token.type not in ["END", "KEYWORD_CONTINUED", "EOF"]:
+        while self.current_token and self.current_token.type not in [
+            "END",
+            "KEYWORD_CONTINUED",
+            "EOF",
+        ]:
             statement = self.statement()
             block_statements.append(statement)
-
 
         if self.current_token and self.current_token.type == "END":
             self.advance()  # end block
@@ -664,7 +679,10 @@ class Parser:
             if t in TokenConstants.type_translator:
                 return TokenConstants.type_translator[t]
             else:
-                self.parser_error(error_type=TypeError, error_message=f"parameter type does not exist: {t}")
+                self.parser_error(
+                    error_type=TypeError,
+                    error_message=f"parameter type does not exist: {t}",
+                )
 
         self.expect("LPAREN")
         self.advance()  # skip (
@@ -679,7 +697,12 @@ class Parser:
                     params.append(param)
                     self.advance()
                 else:
-                    self.parser_error(error_message=("TYPE EXPECTED FOR PARAM. ERROR AT TOKEN " + self.current_token))
+                    self.parser_error(
+                        error_message=(
+                            "TYPE EXPECTED FOR PARAM. ERROR AT TOKEN "
+                            + self.current_token
+                        )
+                    )
             elif self.current_token and self.current_token.type == "COMMA":
                 self.advance()
 
@@ -708,12 +731,12 @@ class Parser:
         code_block = self.parse_block()
 
         el = FunctionDeclaration(
-                type="FunctionDeclaration",
-                name=function_identifier,
-                params=params,
-                code_block=code_block,
-                return_type=type_expected,
-                returning_type=type_expected
-            )
+            type="FunctionDeclaration",
+            name=function_identifier,
+            params=params,
+            code_block=code_block,
+            return_type=type_expected,
+            returning_type=type_expected,
+        )
 
         return el
